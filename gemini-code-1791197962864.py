@@ -15,23 +15,19 @@ st.set_page_config(
 
 # --- ÜST MENÜ, GİTHUB SİMGELERİ VE DİNAMİK "PRESS ENTER TO APPLY" ÇEVİRİSİ (CSS) ---
 def apply_custom_language_styles(lang_code):
-    # Diller için Enter İpucu Metinleri
     instructions = {
         "TR": "Uygulamak için Enter'a basınız",
         "EN": "Press Enter to apply",
         "KK": "Қолдану үшін Enter пернесін басыңыз"
     }
-    
     selected_text = instructions.get(lang_code, "Uygulamak için Enter'a basınız")
     
     custom_css = f"""
     <style>
-    /* Streamlit Üst/Alt Menüleri Gizleme */
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     header {{visibility: hidden;}}
     
-    /* Input alanlarındaki 'Press Enter to apply' metnini seçili dile dönüştürme */
     div[data-testid="InputInstructions"] {{
         font-size: 0px !important;
     }}
@@ -156,6 +152,8 @@ TEXTS = {
         "col_redundancy": "Yedek Miktar",
         "col_total": "Toplam Miktar",
         "col_unit": "Birim",
+        "ph_example": "Örn",
+        "ph_select": "Seçiniz...",
         "units": {
             "pcs": "Adet",
             "m2": "m²",
@@ -282,6 +280,8 @@ TEXTS = {
         "col_redundancy": "Redundant Qty",
         "col_total": "Total Qty",
         "col_unit": "Unit",
+        "ph_example": "e.g.",
+        "ph_select": "Select...",
         "units": {
             "pcs": "Pcs",
             "m2": "m²",
@@ -389,7 +389,7 @@ TEXTS = {
         "city_label": "🏙️ Қала",
         "select_systems_title": "🎯 Жоспарланатын әлсіз тоқ жүйелерін таңдаңыз",
         "select_systems_label": "Қажетті жүйелерді белгілеңіз:",
-        "multiselect_placeholder": "Тандаңыз...",
+        "multiselect_placeholder": "Таңдаңыз...",
         "warning_no_system": "⚠ Жалғастыру үшін кем дегенде бір әлсіз тоқ жүйесін таңдаңыз.",
         "submit_btn": "🚀 Таңдалған жүйелер бойынша есепті қалыптастыру",
         "report_success": "✅ **{project}** жобасы үшін жоспарлау есебі сәтті есептелді!",
@@ -408,6 +408,8 @@ TEXTS = {
         "col_redundancy": "Резервтік мөлшер",
         "col_total": "Жалпы мөлшер",
         "col_unit": "Өлшем бірлігі",
+        "ph_example": "Мис",
+        "ph_select": "Таңдаңыз...",
         "units": {
             "pcs": "Дана",
             "m2": "м²",
@@ -506,7 +508,7 @@ TEXTS = {
     }
 }
 
-# --- PDF OLUŞTURMA (LAZY LOADING - YALNIZCA ÇAĞRILDIĞINDA YÜKLENİR) ---
+# --- PDF OLUŞTURMA (LAZY LOADING) ---
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
     from reportlab.lib.pagesizes import A4
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -594,7 +596,6 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         textColor=colors.HexColor("#1A365D")
     )
 
-    # --- ŞIK KURUMSAL METİN BAŞLIĞI ---
     story.append(Paragraph("<b>TAV Technologies</b>", logo_text_style))
     story.append(Spacer(1, 10))
 
@@ -764,15 +765,15 @@ else:
                 
                 c1, c2 = st.columns(2)
                 with c1:
-                    inputs['cctv_sqm'] = st.number_input(t["cctv_sqm"], min_value=0, value=None, step=1000, key="c_sqm", placeholder="Örn: 75000")
-                    inputs['cctv_checkpoints'] = st.number_input(t["cctv_checkpoints"], min_value=0, value=None, step=1, key="c_check", placeholder="Örn: 20")
-                    inputs['cctv_control_rooms'] = st.number_input(t["cctv_cr"], min_value=0, value=None, step=1, key="c_cr", placeholder="Örn: 1")
-                    inputs['cctv_remote_views'] = st.number_input(t["cctv_rem"], min_value=0, value=None, step=1, key="c_rem", placeholder="Örn: 4")
+                    inputs['cctv_sqm'] = st.number_input(t["cctv_sqm"], min_value=0, value=None, step=1000, key="c_sqm", placeholder=f"{t['ph_example']}: 75000")
+                    inputs['cctv_checkpoints'] = st.number_input(t["cctv_checkpoints"], min_value=0, value=None, step=1, key="c_check", placeholder=f"{t['ph_example']}: 20")
+                    inputs['cctv_control_rooms'] = st.number_input(t["cctv_cr"], min_value=0, value=None, step=1, key="c_cr", placeholder=f"{t['ph_example']}: 1")
+                    inputs['cctv_remote_views'] = st.number_input(t["cctv_rem"], min_value=0, value=None, step=1, key="c_rem", placeholder=f"{t['ph_example']}: 4")
                 with c2:
-                    inputs['cctv_fence_m'] = st.number_input(t["cctv_fence"], min_value=0, value=None, step=100, key="c_fence", placeholder="Örn: 8000")
-                    inputs['cctv_operators'] = st.number_input(t["cctv_op"], min_value=0, value=None, step=1, key="c_op", placeholder="Örn: 6")
-                    inputs['cctv_storage_days'] = st.selectbox(t["cctv_days"], [30, 60, 90, 180], index=None, key="c_days", placeholder="Seçiniz...")
-                    inputs['cctv_resolution'] = st.selectbox(t["cctv_res"], ["2MP", "4MP", "8MP"], index=None, key="c_res", placeholder="Seçiniz...")
+                    inputs['cctv_fence_m'] = st.number_input(t["cctv_fence"], min_value=0, value=None, step=100, key="c_fence", placeholder=f"{t['ph_example']}: 8000")
+                    inputs['cctv_operators'] = st.number_input(t["cctv_op"], min_value=0, value=None, step=1, key="c_op", placeholder=f"{t['ph_example']}: 6")
+                    inputs['cctv_storage_days'] = st.selectbox(t["cctv_days"], [30, 60, 90, 180], index=None, key="c_days", placeholder=t["ph_select"])
+                    inputs['cctv_resolution'] = st.selectbox(t["cctv_res"], ["2MP", "4MP", "8MP"], index=None, key="c_res", placeholder=t["ph_select"])
 
                 st.markdown("---")
                 inputs['cctv_use_anpr'] = st.checkbox(t["cctv_anpr_chk"], value=False, key="c_anpr_chk")
@@ -780,9 +781,9 @@ else:
                 if inputs['cctv_use_anpr']:
                     ca1, ca2 = st.columns(2)
                     with ca1:
-                        inputs['cctv_lanes'] = st.number_input(t["cctv_lanes"], min_value=0, value=None, step=1, key="c_lanes", placeholder="Örn: 8")
+                        inputs['cctv_lanes'] = st.number_input(t["cctv_lanes"], min_value=0, value=None, step=1, key="c_lanes", placeholder=f"{t['ph_example']}: 8")
                     with ca2:
-                        inputs['cctv_anpr_speed'] = st.selectbox(t["cctv_speed"], [t["cctv_speed_low"], t["cctv_speed_high"]], index=None, key="c_speed", placeholder="Seçiniz...")
+                        inputs['cctv_anpr_speed'] = st.selectbox(t["cctv_speed"], [t["cctv_speed_low"], t["cctv_speed_high"]], index=None, key="c_speed", placeholder=t["ph_select"])
                 else:
                     inputs['cctv_lanes'] = 0
 
@@ -796,14 +797,14 @@ else:
                 ac1, ac2 = st.columns(2)
                 with ac1:
                     st.markdown(f"**{t['acs_doors_sec']}**")
-                    inputs['acs_single_doors'] = st.number_input(t["acs_s_doors"], min_value=0, value=None, step=1, key="a_s_doors", placeholder="Örn: 80")
-                    inputs['acs_double_doors'] = st.number_input(t["acs_d_doors"], min_value=0, value=None, step=1, key="a_d_doors", placeholder="Örn: 20")
-                    inputs['acs_turnstiles'] = st.number_input(t["acs_turnstiles"], min_value=0, value=None, step=1, key="a_turn", placeholder="Örn: 16")
+                    inputs['acs_single_doors'] = st.number_input(t["acs_s_doors"], min_value=0, value=None, step=1, key="a_s_doors", placeholder=f"{t['ph_example']}: 80")
+                    inputs['acs_double_doors'] = st.number_input(t["acs_d_doors"], min_value=0, value=None, step=1, key="a_d_doors", placeholder=f"{t['ph_example']}: 20")
+                    inputs['acs_turnstiles'] = st.number_input(t["acs_turnstiles"], min_value=0, value=None, step=1, key="a_turn", placeholder=f"{t['ph_example']}: 16")
                 with ac2:
                     st.markdown(f"**{t['acs_users_sec']}**")
-                    inputs['acs_users'] = st.number_input(t["acs_users"], min_value=0, value=None, step=100, key="a_users", placeholder="Örn: 3000")
-                    inputs['acs_face_rec_qty'] = st.number_input(t["acs_face"], min_value=0, value=None, step=1, key="a_face_qty", placeholder="Örn: 10")
-                    inputs['acs_fingerprint_qty'] = st.number_input(t["acs_finger"], min_value=0, value=None, step=1, key="a_finger_qty", placeholder="Örn: 15")
+                    inputs['acs_users'] = st.number_input(t["acs_users"], min_value=0, value=None, step=100, key="a_users", placeholder=f"{t['ph_example']}: 3000")
+                    inputs['acs_face_rec_qty'] = st.number_input(t["acs_face"], min_value=0, value=None, step=1, key="a_face_qty", placeholder=f"{t['ph_example']}: 10")
+                    inputs['acs_fingerprint_qty'] = st.number_input(t["acs_finger"], min_value=0, value=None, step=1, key="a_finger_qty", placeholder=f"{t['ph_example']}: 15")
 
                 inputs['acs_redundancy'] = st.number_input(
                     t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="a_red"
@@ -814,10 +815,10 @@ else:
                 
                 fc1, fc2 = st.columns(2)
                 with fc1:
-                    inputs['fas_sqm'] = st.number_input(t["fas_sqm"], min_value=0, value=None, step=1000, key="f_sqm", placeholder="Örn: 75000")
+                    inputs['fas_sqm'] = st.number_input(t["fas_sqm"], min_value=0, value=None, step=1000, key="f_sqm", placeholder=f"{t['ph_example']}: 75000")
                     inputs['fas_raised_floor'] = st.checkbox(t["fas_rf"], value=False, key="f_rf")
                 with fc2:
-                    inputs['fas_beam_detectors'] = st.number_input(t["fas_beam"], min_value=0, value=None, step=1, key="f_beam", placeholder="Örn: 6")
+                    inputs['fas_beam_detectors'] = st.number_input(t["fas_beam"], min_value=0, value=None, step=1, key="f_beam", placeholder=f"{t['ph_example']}: 6")
 
                 inputs['fas_redundancy'] = st.number_input(
                     t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="f_red"
@@ -828,10 +829,10 @@ else:
                 
                 pc1, pc2 = st.columns(2)
                 with pc1:
-                    inputs['pava_sqm'] = st.number_input(t["pava_sqm"], min_value=0, value=None, step=1000, key="p_sqm", placeholder="Örn: 75000")
-                    inputs['pava_zones'] = st.number_input(t["pava_zones"], min_value=0, value=None, step=1, key="p_zones", placeholder="Örn: 16")
+                    inputs['pava_sqm'] = st.number_input(t["pava_sqm"], min_value=0, value=None, step=1000, key="p_sqm", placeholder=f"{t['ph_example']}: 75000")
+                    inputs['pava_zones'] = st.number_input(t["pava_zones"], min_value=0, value=None, step=1, key="p_zones", placeholder=f"{t['ph_example']}: 16")
                 with pc2:
-                    inputs['pava_environment'] = st.selectbox(t["pava_env"], [t["pava_env_std"], t["pava_env_noisy"], t["pava_env_quiet"]], index=None, key="p_env", placeholder="Seçiniz...")
+                    inputs['pava_environment'] = st.selectbox(t["pava_env"], [t["pava_env_std"], t["pava_env_noisy"], t["pava_env_quiet"]], index=None, key="p_env", placeholder=t["ph_select"])
 
                 inputs['pava_redundancy'] = st.number_input(
                     t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="p_red"
@@ -842,7 +843,6 @@ else:
 
     # --- HESAPLAMA MANTIĞI VE SONUÇLAR ---
     if submit_button:
-        # PROJE ADI KONTROLÜ
         if not project_name or not project_name.strip():
             st.error(t["warning_no_project"])
         else:
