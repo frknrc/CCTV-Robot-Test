@@ -154,4 +154,281 @@ TEXTS = {
         "cctv_lanes": "ANPR Кіру/Шығу жолақтарының саны",
         "cctv_speed": "Қозғалыс жылдамдығының түрі",
         "cctv_speed_low": "Төмен жылдамдық (Бақылау-өткізу пункті / Шлагбаум)",
-        "cctv_speed_high": "Жоғары жылдамдық (Негіз
+        "cctv_speed_high": "Жоғары жылдамдық (Негізгі жол / VIP кіру)",
+        "cctv_cr": "Негізгі басқару бөлмелерінің саны",
+        "cctv_op": "Ауысымдағы белсенді операторлар саны",
+        "cctv_rem": "Қашықтан бақылау нүктелерінің саны",
+        "cctv_days": "Бейнежазбаны сақтау мерзімі (Күн)",
+        "cctv_res": "Камера сапасының стандарты",
+        "acs_title": "🚪 Рұқсатты бақылау және турникет жүйесі (ACS)",
+        "acs_doors_sec": "Есік түрлері мен саны",
+        "acs_s_doors": "Бір жақтаулы бақыланатын есіктер",
+        "acs_d_doors": "Екі жақтаулы бақыланатын есіктер",
+        "acs_turnstiles": "Турникеттер саны (Қызметкерлер / Жолаушылар)",
+        "acs_users_sec": "Пайдаланушылар мен биометрикалық параметрлер",
+        "acs_users": "Тіркелетін жалпы карта пайдаланушыларының саны",
+        "acs_face": "Бетті тану терминалдарының саны",
+        "acs_finger": "Саусақ изін оқу құрылғыларының саны",
+        "fas_title": "🚨 Өрт дабылы жүйесі (FAS)",
+        "fas_sqm": "Өрт дабылы орнатылатын жабық аудан (м²)",
+        "fas_rf": "Аспалы төбе мен көтерілген еден ішіндегі датчиктер қосылсын",
+        "fas_beam": "Биік төбе/Ангар үшін сәулелік (Beam) датчиктер саны",
+        "pava_title": "📢 Дауыстық хабарлау және эвакуация жүйесі (PA/VA)",
+        "pava_sqm": "Хабарлау жасалатын жалпы жабық аудан (м²)",
+        "pava_zones": "Тәуелсіз хабарлау аймақтарының (Zone) саны",
+        "pava_env": "Басым орта түрі және шу деңгейі",
+        "pava_env_std": "Стандартты терминал аймағы (70-75 dB)",
+        "pava_env_noisy": "Шулы автотұрақ / Техникалық аймақ (80-85 dB)",
+        "pava_env_quiet": "Тыныш офис / Басқару аймағы (60 dB)",
+        "system_names": {
+            "CCTV": "CCTV (Бейнебақылау жүйесі)",
+            "ACS": "ACS (Рұқсатты бақылау жүйесі)",
+            "FAS": "FAS (Өрт дабылы жүйесі)",
+            "PA/VA": "PA/VA (Дауыстық хабарлау жүйесі)"
+        }
+    }
+}
+
+# --- DİL SEÇİMİ ---
+col_lang, col_blank = st.columns([1.5, 3.5])
+with col_lang:
+    selected_lang = st.selectbox(
+        "🌐 Language / Dil / Тіл",
+        ["TR", "EN", "KK"],
+        format_func=lambda x: {"TR": "🇹🇷 Türkçe", "EN": "🇬🇧 English", "KK": "🇰🇿 Қазақша"}[x],
+        index=0
+    )
+
+t = TEXTS[selected_lang]
+
+# --- LOGO VE BAŞLIK ---
+logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
+
+col_logo, col_title = st.columns([1.5, 3.5])
+with col_logo:
+    st.image(logo_url, width=320)
+with col_title:
+    st.title(t["page_title"])
+    st.caption(t["caption"])
+
+st.markdown("---")
+
+# --- PROJE BİLGİSİ VE SİSTEM SEÇİMİ ---
+project_name = st.text_input(t["project_name_label"], value=t["project_name_default"])
+
+st.subheader(t["select_systems_title"])
+
+sys_options = [
+    t["system_names"]["CCTV"],
+    t["system_names"]["ACS"],
+    t["system_names"]["FAS"],
+    t["system_names"]["PA/VA"]
+]
+
+selected_systems = st.multiselect(
+    t["select_systems_label"],
+    sys_options,
+    default=[sys_options[0], sys_options[1]]
+)
+
+st.markdown("---")
+
+if not selected_systems:
+    st.warning(t["warning_no_system"])
+else:
+    system_tabs = st.tabs(selected_systems)
+    inputs = {}
+
+    for i, sys in enumerate(selected_systems):
+        with system_tabs[i]:
+            if t["system_names"]["CCTV"] in sys:
+                st.markdown(f"### {t['cctv_title']}")
+                inputs['cctv_airport_type'] = st.radio(
+                    t["cctv_scope"],
+                    [t["cctv_opt1"], t["cctv_opt2"]],
+                    key="cctv_type"
+                )
+                c1, c2 = st.columns(2)
+                with c1:
+                    inputs['cctv_sqm'] = st.number_input(t["cctv_sqm"], min_value=1000, value=75000, step=5000, key="c_sqm")
+                    inputs['cctv_checkpoints'] = st.number_input(t["cctv_checkpoints"], min_value=1, value=20, key="c_check")
+                with c2:
+                    inputs['cctv_fence_m'] = st.number_input(t["cctv_fence"], min_value=500, value=8000, step=500, key="c_fence")
+                    inputs['cctv_use_anpr'] = st.checkbox(t["cctv_anpr_chk"], value=True, key="c_anpr_chk")
+
+                if inputs['cctv_use_anpr']:
+                    ca1, ca2 = st.columns(2)
+                    with ca1:
+                        inputs['cctv_lanes'] = st.number_input(t["cctv_lanes"], min_value=1, value=8, key="c_lanes")
+                    with ca2:
+                        inputs['cctv_anpr_speed'] = st.selectbox(t["cctv_speed"], [t["cctv_speed_low"], t["cctv_speed_high"]], key="c_speed")
+                else:
+                    inputs['cctv_lanes'] = 0
+
+                c3, c4 = st.columns(2)
+                with c3:
+                    inputs['cctv_control_rooms'] = st.number_input(t["cctv_cr"], min_value=1, value=1, key="c_cr")
+                    inputs['cctv_operators'] = st.number_input(t["cctv_op"], min_value=1, value=6, key="c_op")
+                with c4:
+                    inputs['cctv_remote_views'] = st.number_input(t["cctv_rem"], min_value=0, value=4, key="c_rem")
+                    inputs['cctv_storage_days'] = st.selectbox(t["cctv_days"], [30, 60, 90, 180], index=1, key="c_days")
+                    inputs['cctv_resolution'] = st.selectbox(t["cctv_res"], ["4MP", "2MP", "8MP"], key="c_res")
+
+            elif t["system_names"]["ACS"] in sys:
+                st.markdown(f"### {t['acs_title']}")
+                ac1, ac2 = st.columns(2)
+                with ac1:
+                    st.markdown(f"**{t['acs_doors_sec']}**")
+                    inputs['acs_single_doors'] = st.number_input(t["acs_s_doors"], min_value=0, value=80, step=5, key="a_s_doors")
+                    inputs['acs_double_doors'] = st.number_input(t["acs_d_doors"], min_value=0, value=20, step=2, key="a_d_doors")
+                    inputs['acs_turnstiles'] = st.number_input(t["acs_turnstiles"], min_value=0, value=16, step=2, key="a_turn")
+                with ac2:
+                    st.markdown(f"**{t['acs_users_sec']}**")
+                    inputs['acs_users'] = st.number_input(t["acs_users"], min_value=100, value=3000, step=500, key="a_users")
+                    inputs['acs_face_rec_qty'] = st.number_input(t["acs_face"], min_value=0, value=10, step=1, key="a_face_qty")
+                    inputs['acs_fingerprint_qty'] = st.number_input(t["acs_finger"], min_value=0, value=15, step=1, key="a_finger_qty")
+
+            elif t["system_names"]["FAS"] in sys:
+                st.markdown(f"### {t['fas_title']}")
+                fc1, fc2 = st.columns(2)
+                with fc1:
+                    inputs['fas_sqm'] = st.number_input(t["fas_sqm"], min_value=1000, value=75000, step=5000, key="f_sqm")
+                    inputs['fas_raised_floor'] = st.checkbox(t["fas_rf"], value=True, key="f_rf")
+                with fc2:
+                    inputs['fas_beam_detectors'] = st.number_input(t["fas_beam"], min_value=0, value=6, key="f_beam")
+
+            elif t["system_names"]["PA/VA"] in sys:
+                st.markdown(f"### {t['pava_title']}")
+                pc1, pc2 = st.columns(2)
+                with pc1:
+                    inputs['pava_sqm'] = st.number_input(t["pava_sqm"], min_value=1000, value=75000, step=5000, key="p_sqm")
+                    inputs['pava_zones'] = st.number_input(t["pava_zones"], min_value=1, value=16, step=1, key="p_zones")
+                with pc2:
+                    inputs['pava_environment'] = st.selectbox(t["pava_env"], [t["pava_env_std"], t["pava_env_noisy"], t["pava_env_quiet"]], key="p_env")
+
+    st.markdown("---")
+    submit_button = st.button(t["submit_btn"], use_container_width=True, type="primary")
+
+    # --- HESAPLAMA MANTIĞI VESHESAPLAMA SONUÇLARI ---
+    if submit_button:
+        calculated_results = {}
+
+        for sys in selected_systems:
+            # 1. CCTV HESAPLAMA
+            if t["system_names"]["CCTV"] in sys:
+                sqm_per_cam = 60 if inputs['cctv_airport_type'] == t["cctv_opt1"] else 90
+                fence_m_per_cam = 40 if inputs['cctv_airport_type'] == t["cctv_opt1"] else 60
+
+                indoor_cams = math.ceil(inputs['cctv_sqm'] / sqm_per_cam)
+                fence_cams = math.ceil(inputs['cctv_fence_m'] / fence_m_per_cam)
+                checkpoint_cams = inputs['cctv_checkpoints'] * 4
+                anpr_cams = inputs['cctv_lanes'] * 2 if inputs.get('cctv_use_anpr', False) else 0
+
+                total_cams = indoor_cams + fence_cams + checkpoint_cams + anpr_cams
+                
+                bitrate_map = {"2MP": 3, "4MP": 5, "8MP": 10}
+                mbps_per_cam = bitrate_map.get(inputs['cctv_resolution'], 5)
+                storage_tb = math.ceil((total_cams * mbps_per_cam * 3600 * 24 * inputs['cctv_storage_days']) / (8 * 1024 * 1024))
+
+                poe_switches_24p = math.ceil(total_cams / 20)
+
+                calculated_results['CCTV'] = pd.DataFrame([
+                    {"Bileşen / Metrik": "İç Mekan Kameraları", "Miktar": indoor_cams, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Çevre Güvenlik Kameraları", "Miktar": fence_cams, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Kontrol Noktası Kameraları", "Miktar": checkpoint_cams, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "ANPR (Plaka Tanıma) Kameraları", "Miktar": anpr_cams, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "TOPLAM KAMERA SAYISI", "Miktar": total_cams, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Gerekli Depolama Alanı (Net)", "Miktar": storage_tb, "Birim": "TB"},
+                    {"Bileşen / Metrik": "24-Port PoE Switch İhtiyacı", "Miktar": poe_switches_24p, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "VMS Lisans Sayısı", "Miktar": total_cams, "Birim": "Lisans"}
+                ])
+
+            # 2. ACS HESAPLAMA
+            elif t["system_names"]["ACS"] in sys:
+                total_doors = inputs['acs_single_doors'] + inputs['acs_double_doors']
+                readers = (inputs['acs_single_doors'] * 2) + (inputs['acs_double_doors'] * 2) + (inputs['acs_turnstiles'] * 2)
+                controllers = math.ceil((total_doors + inputs['acs_turnstiles']) / 4)
+
+                calculated_results['ACS'] = pd.DataFrame([
+                    {"Bileşen / Metrik": "Kontrollü Kapı Sayısı (Tek + Çift)", "Miktar": total_doors, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Turnikeler", "Miktar": inputs['acs_turnstiles'], "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Kart Okuyucular", "Miktar": readers, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Yüz Tanıma Terminalleri", "Miktar": inputs['acs_face_rec_qty'], "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Parmak İzi Okuyucular", "Miktar": inputs['acs_fingerprint_qty'], "Birim": "Adet"},
+                    {"Bileşen / Metrik": "4-Kapılı Geçiş Kontrol Paneli", "Miktar": controllers, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Tanımlı Kullanıcı Kapasitesi", "Miktar": inputs['acs_users'], "Birim": "Kullanıcı"}
+                ])
+
+            # 3. FAS HESAPLAMA
+            elif t["system_names"]["FAS"] in sys:
+                sqm = inputs['fas_sqm']
+                base_detectors = math.ceil(sqm / 60)
+                if inputs['fas_raised_floor']:
+                    base_detectors = math.ceil(base_detectors * 1.5)
+
+                manual_call_points = math.ceil(sqm / 500)
+                sounders_flashing = math.ceil(sqm / 400)
+                loops = math.ceil(base_detectors / 200)
+                panels = math.ceil(loops / 8)
+
+                calculated_results['FAS'] = pd.DataFrame([
+                    {"Bileşen / Metrik": "Duman / Sıcaklık Dedektörleri", "Miktar": base_detectors, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Işın (Beam) Dedektör Çifti", "Miktar": inputs['fas_beam_detectors'], "Birim": "Çift"},
+                    {"Bileşen / Metrik": "Yangın İhbar Butonları", "Miktar": manual_call_points, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Flaşörlü Sirenler", "Miktar": sounders_flashing, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Toplam Çevrim (Loop) Sayısı", "Miktar": loops, "Birim": "Loop"},
+                    {"Bileşen / Metrik": "Yangın Kontrol Paneli (8-Loop)", "Miktar": panels, "Birim": "Adet"}
+                ])
+
+            # 4. PA/VA HESAPLAMA
+            elif t["system_names"]["PA/VA"] in sys:
+                sqm = inputs['pava_sqm']
+                speakers = math.ceil(sqm / 50)
+                watts_per_spk = 6 if inputs['pava_environment'] == t["pava_env_noisy"] else 3
+                total_power_watts = math.ceil(speakers * watts_per_spk * 1.25)
+                amplifiers = math.ceil(total_power_watts / 1000)
+
+                calculated_results['PA/VA'] = pd.DataFrame([
+                    {"Bileşen / Metrik": "Tavan / Duvar Tipi Hoparlörler", "Miktar": speakers, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Tahmini Güç İhtiyacı", "Miktar": total_power_watts, "Birim": "Watt"},
+                    {"Bileşen / Metrik": "Sistem Anons Bölgesi (Zone)", "Miktar": inputs['pava_zones'], "Birim": "Zone"},
+                    {"Bileşen / Metrik": "1000W Güç Anfisi İhtiyacı", "Miktar": amplifiers, "Birim": "Adet"},
+                    {"Bileşen / Metrik": "Acil Anons Mikrofon İstasyonu", "Miktar": 2, "Birim": "Adet"}
+                ])
+
+        st.session_state['results'] = calculated_results
+        st.session_state['project_name'] = project_name
+        st.session_state['selected_systems'] = selected_systems
+
+    # --- EKRANA BASMA VE İNDİRME BUTONLARI ---
+    if 'results' in st.session_state and st.session_state['results']:
+        st.success(t["report_success"].format(project=st.session_state['project_name']))
+
+        res_tabs = st.tabs([f"📊 {s}" for s in st.session_state['selected_systems']])
+
+        for idx, sys_name in enumerate(st.session_state['selected_systems']):
+            with res_tabs[idx]:
+                key_code = "CCTV" if "CCTV" in sys_name else ("ACS" if "ACS" in sys_name else ("FAS" if "FAS" in sys_name else "PA/VA"))
+                if key_code in st.session_state['results']:
+                    df = st.session_state['results'][key_code]
+                    st.dataframe(df, use_container_width=True, hide_index=True)
+
+        st.markdown("---")
+        st.subheader(t["download_section"])
+
+        # EXCEL OLUŞTURMA
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            for sys_key, df_res in st.session_state['results'].items():
+                df_res.to_excel(writer, sheet_name=sys_key, index=False)
+        excel_data = excel_buffer.getvalue()
+
+        col_dl1, col_dl2 = st.columns(2)
+        with col_dl1:
+            st.download_button(
+                label="📊 Excel Raporu İndir (.xlsx)",
+                data=excel_data,
+                file_name=f"{st.session_state['project_name']}_Zayif_Akim_Raporu.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
