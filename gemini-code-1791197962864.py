@@ -90,6 +90,7 @@ TEXTS = {
         "city_label": "🏙️ Şehir",
         "select_systems_title": "🎯 Planlanacak Zayıf Akım Sistemlerini Seçiniz",
         "select_systems_label": "İhtiyaç duyulan sistemleri işaretleyiniz:",
+        "multiselect_placeholder": "Seçim yapınız...",
         "warning_no_system": "⚠ Lütfen devam etmek için en az bir zayıf akım sistemi seçiniz.",
         "submit_btn": "🚀 Tüm Seçili Sistemlerin İhtiyaç Raporunu Oluştur",
         "report_success": "✅ **{project}** İçin Seçilen Sistem Planlama Raporu Başarıyla Hesaplandı!",
@@ -213,6 +214,7 @@ TEXTS = {
         "city_label": "🏙️ City",
         "select_systems_title": "🎯 Select ELV Systems to Plan",
         "select_systems_label": "Select the required systems:",
+        "multiselect_placeholder": "Select options...",
         "warning_no_system": "⚠ Please select at least one ELV system to proceed.",
         "submit_btn": "🚀 Generate Requirements Report for Selected Systems",
         "report_success": "✅ Planning report successfully generated for **{project}**!",
@@ -336,6 +338,7 @@ TEXTS = {
         "city_label": "🏙️ Қала",
         "select_systems_title": "🎯 Жоспарланатын әлсіз тоқ жүйелерін таңдаңыз",
         "select_systems_label": "Қажетті жүйелерді белгілеңіз:",
+        "multiselect_placeholder": "Тандаңыз...",
         "warning_no_system": "⚠ Жалғастыру үшін кем дегенде бір әлсіз тоқ жүйесін таңдаңыз.",
         "submit_btn": "🚀 Таңдалған жүйелер бойынша есепті қалыптастыру",
         "report_success": "✅ **{project}** жобасы үшін жоспарлау есебі сәтті есептелді!",
@@ -609,7 +612,7 @@ with col_title:
         selected_lang = st.selectbox(
             "🌐 Language / Dil / Тіл",
             ["TR", "EN", "KK"],
-            format_func=lambda x: {"TR": "🇹🇷 Türkçe", "EN": "🇬🇧 English", "KK": "🇰🇿 Қазақша"}[x],
+            format_func=lambda x: {"TR": "TR Türkçe", "EN": "EN English", "KK": "KK Қазақша"}[x],
             index=0
         )
     
@@ -647,7 +650,8 @@ sys_options = [
 selected_systems = st.multiselect(
     t["select_systems_label"],
     sys_options,
-    default=[]
+    default=[],
+    placeholder=t["multiselect_placeholder"]
 )
 
 st.markdown("---")
