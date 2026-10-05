@@ -96,6 +96,7 @@ TEXTS = {
         "report_success": "✅ **{project}** İçin Seçilen Sistem Planlama Raporu Başarıyla Hesaplandı!",
         "download_section": "📥 Rapor Çıktısı Alın",
         "download_pdf_btn": "📄 PDF Raporunu İndir",
+        "download_excel_btn": "📊 Excel Raporunu İndir",
         "report_date_label": "Rapor Tarihi",
         "location_label": "Konum",
         "inputs_header": "📋 Girdi Parametreleri (Tasarım Kriterleri)",
@@ -220,6 +221,7 @@ TEXTS = {
         "report_success": "✅ Planning report successfully generated for **{project}**!",
         "download_section": "📥 Download Report",
         "download_pdf_btn": "📄 Download PDF Report",
+        "download_excel_btn": "📊 Download Excel Report",
         "report_date_label": "Report Date",
         "location_label": "Location",
         "inputs_header": "📋 Input Parameters (Design Criteria)",
@@ -344,6 +346,7 @@ TEXTS = {
         "report_success": "✅ **{project}** жобасы үшін жоспарлау есебі сәтті есептелді!",
         "download_section": "📥 Есепті жүктеп алу",
         "download_pdf_btn": "📄 PDF есебін жүктеп алу",
+        "download_excel_btn": "📊 Excel есебін жүктеп алу",
         "report_date_label": "Есеп күні",
         "location_label": "Орналасқан жері",
         "inputs_header": "📋 Енгізілген параметрлер (Жобалау критерийлері)",
@@ -586,7 +589,7 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
 # --- EXCEL OLUŞTURMA FONKSİYONU ---
 def generate_excel(results, inputs_summary, t_labels):
     output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
         for sys_key, df_out in results.items():
             sheet_name = sys_key.replace("/", "-")[:30]
             
@@ -717,7 +720,7 @@ else:
                     inputs['cctv_lanes'] = 0
 
                 inputs['cctv_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="c_red"
+                    t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="c_red"
                 )
 
             elif t["system_names"]["ACS"] in sys:
@@ -736,7 +739,7 @@ else:
                     inputs['acs_fingerprint_qty'] = st.number_input(t["acs_finger"], min_value=0, value=15, step=1, key="a_finger_qty")
 
                 inputs['acs_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="a_red"
+                    t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="a_red"
                 )
 
             elif t["system_names"]["FAS"] in sys:
@@ -750,7 +753,7 @@ else:
                     inputs['fas_beam_detectors'] = st.number_input(t["fas_beam"], min_value=0, value=6, key="f_beam")
 
                 inputs['fas_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="f_red"
+                    t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="f_red"
                 )
 
             elif t["system_names"]["PA/VA"] in sys:
@@ -764,7 +767,7 @@ else:
                     inputs['pava_environment'] = st.selectbox(t["pava_env"], [t["pava_env_std"], t["pava_env_noisy"], t["pava_env_quiet"]], key="p_env")
 
                 inputs['pava_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="p_red"
+                    t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="p_red"
                 )
 
     st.markdown("---")
@@ -969,7 +972,7 @@ else:
             )
         with col_excel:
             st.download_button(
-                label="📊 Excel Raporunu İndir",
+                label=t["download_excel_btn"],
                 data=excel_bytes,
                 file_name=excel_filename,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
