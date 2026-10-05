@@ -67,10 +67,12 @@ else:
         cctv_storage_days = 60
         cctv_resolution = "4MP (Önerilen / Optimal)"
 
-        acs_doors = 100
+        acs_single_doors = 80
+        acs_double_doors = 20
         acs_turnstiles = 12
         acs_users = 2500
-        acs_biometric = False
+        acs_face_rec_qty = 10
+        acs_fingerprint_qty = 15
 
         fas_sqm = 75000
         fas_raised_floor = True
@@ -119,11 +121,15 @@ else:
                     st.markdown("### 🚪 Kartlı Geçiş ve Turnike Sistemi (ACS)")
                     ac1, ac2 = st.columns(2)
                     with ac1:
-                        acs_doors = st.number_input("Kontrollü Geçiş Kapı Sayısı", min_value=1, value=120, step=5, key="a_doors")
+                        st.markdown("**Kapı Tip ve Sayıları**")
+                        acs_single_doors = st.number_input("Tek Kanat Kontrollü Kapı Sayısı", min_value=0, value=80, step=5, key="a_s_doors")
+                        acs_double_doors = st.number_input("Çift Kanat Kontrollü Kapı Sayısı", min_value=0, value=20, step=2, key="a_d_doors")
                         acs_turnstiles = st.number_input("Geçiş Turnikesi Sayısı (Personel / Yolcu)", min_value=0, value=16, step=2, key="a_turn")
                     with ac2:
+                        st.markdown("**Kullanıcı ve Biyometrik Seçenekleri**")
                         acs_users = st.number_input("Sisteme Tanımlanacak Toplam Kartlı Kullanıcı Sayısı", min_value=100, value=3000, step=500, key="a_users")
-                        acs_biometric = st.checkbox("Yüksek Güvenlikli Kapılarda Biyometrik Tanıma (Yüz/Parmak İzi) Olsun", value=True, key="a_bio")
+                        acs_face_rec_qty = st.number_input("Yüz Tanıma Terminali Adedi", min_value=0, value=10, step=1, key="a_face_qty")
+                        acs_fingerprint_qty = st.number_input("Parmak İzi Okuyucu Adedi", min_value=0, value=15, step=1, key="a_finger_qty")
 
                 # --- 3. FAS SİSTEMİ ---
                 elif "FAS" in sys:
@@ -209,33 +215,68 @@ else:
 
                 # --- 2. ACS HESAPLAR ---
                 elif "ACS" in sys:
-                    readers = acs_doors * 2
-                    door_controllers = math.ceil(acs_doors / 4)
-                    turnstile_readers = acs_turnstiles * 2
-                    biometric_readers = math.ceil(acs_doors * 0.15) if acs_biometric else 0
+                    total_doors = acs_single_doors + acs_double_doors
+                    total_biometric = acs_face_rec_qty + acs_fingerprint_qty
 
-                    col_a1, col_a2, col_a3 = st.columns(3)
-                    col_a1.metric("Kontrollü Kapı", f"{acs_doors} Adet")
-                    col_a2.metric("Ana Kapı Kontrol Paneli", f"{door_controllers} Adet")
-                    col_a3.metric("Basılacak Kart Sayısı", f"{math.ceil(acs_users * 1.2):,} Adet")
+                    # Biyometrik kapı sayısı toplam kapı sayısını geçemez
+                    biometric_doors = min(total_biometric, total_doors)
+                    standard_doors = total_doors - biometric_doors
+
+                    # Standart kapıların giriş ve çıkışında (2x) RFID kart okuyucu bulunur
+                    card_readers = standard_doors * 2
+                    
+                    # Biyometrik kapıların çıkış yönü için çıkış butonu eklenir
+                    exit_buttons = biometric_doors
+
+                    door_controllers = math.ceil(total_doors / 4)
+                    turnstile_readers = acs_turnstiles * 2
+                    
+                    # Çift kanat kapılarda 2'şer adet kilit ve manyetik kontak (MC) hesaplanır
+                    locks = (acs_single_doors * 1) + (acs_double_doors * 2)
+                    magnetic_contacts = (acs_single_doors * 1) + (acs_double_doors * 2)
+
+                    col_a1, col_a2, col_a3, col_a4 = st.columns(4)
+                    col_a1.metric("Toplam Kontrollü Kapı", f"{total_doors} Adet")
+                    col_a2.metric("RFID Okuyucu", f"{card_readers} Adet")
+                    col_a3.metric("Biyometrik Terminal", f"{total_biometric} Adet")
+                    col_a4.metric("Çıkış Butonu", f"{exit_buttons} Adet")
 
                     st.table({
-                        "Ekipman / Modül Tanımı": ["Kapı Kart Okuyucu (RFID)", "Turnike Kart Okuyucu", "Biyometrik Okuyucu", "4 Kapılı Kapı Kontrol Paneli", "Elektromanyetik Kilit / Kilit Karşılığı", "Proximity Kullanıcı Kartı (+%20 Yedek)"],
-                        "Miktar": [readers, turnstile_readers, biometric_readers, door_controllers, acs_doors, math.ceil(acs_users * 1.2)],
-                        "Birim": ["Adet", "Adet", "Adet", "Adet", "Adet", "Adet"]
+                        "Ekipman / Modül Tanımı": [
+                            "Tek Kanat Kontrollü Kapı",
+                            "Çift Kanat Kontrollü Kapı",
+                            "Kapı Kart Okuyucu (RFID)",
+                            "Yüz Tanıma Terminali",
+                            "Parmak İzi Okuyucu",
+                            "Kapı Çıkış Butonu (Biyometrik Kapılar İçin)",
+                            "Turnike Kart Okuyucu",
+                            "4 Kapılı Kapı Kontrol Paneli",
+                            "Manyetik Kontak (MC)",
+                            "Elektromanyetik Kilit / Kilit Karşılığı",
+                            "Proximity Kullanıcı Kartı (+%20 Yedek)"
+                        ],
+                        "Miktar": [
+                            acs_single_doors,
+                            acs_double_doors,
+                            card_readers,
+                            acs_face_rec_qty,
+                            acs_fingerprint_qty,
+                            exit_buttons,
+                            turnstile_readers,
+                            door_controllers,
+                            magnetic_contacts,
+                            locks,
+                            math.ceil(acs_users * 1.2)
+                        ],
+                        "Birim": ["Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet"]
                     })
 
                     excel_rows.extend([
-                        {"Sistem": "ACS", "Bileşen / Tanım": "Kontrollü Kapı Sayısı", "Değer / Miktar": acs_doors, "Birim": "Adet"},
-                        {"Sistem": "ACS", "Bileşen / Tanım": "Kapı Kart Okuyucu", "Değer / Miktar": readers, "Birim": "Adet"},
-                        {"Sistem": "ACS", "Bileşen / Tanım": "Turnike Kart Okuyucu", "Değer / Miktar": turnstile_readers, "Birim": "Adet"},
-                        {"Sistem": "ACS", "Bileşen / Tanım": "Biyometrik Okuyucu", "Değer / Miktar": biometric_readers, "Birim": "Adet"},
-                        {"Sistem": "ACS", "Bileşen / Tanım": "4-Kapı Kontrol Paneli", "Değer / Miktar": door_controllers, "Birim": "Adet"},
-                        {"Sistem": "ACS", "Bileşen / Tanım": "Basılacak Kart Miktarı", "Değer / Miktar": math.ceil(acs_users * 1.2), "Birim": "Adet"},
-                    ])
-
-                # --- 3. FAS HESAPLAR ---
-                elif "FAS" in sys:
-                    sqm_per_detector = 50 if fas_raised_floor else 70
-                    detectors = math.ceil(fas_sqm / sqm_per_detector)
-                    manual_call_
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Tek Kanat Kontrollü Kapı Sayısı", "Değer / Miktar": acs_single_doors, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Çift Kanat Kontrollü Kapı Sayısı", "Değer / Miktar": acs_double_doors, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Toplam Kapı Sayısı", "Değer / Miktar": total_doors, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Kapı Kart Okuyucu (RFID)", "Değer / Miktar": card_readers, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Yüz Tanıma Terminali", "Değer / Miktar": acs_face_rec_qty, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Parmak İzi Okuyucu", "Değer / Miktar": acs_fingerprint_qty, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Çıkış Butonu (Biyometrik Kapılar)", "Değer / Miktar": exit_buttons, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Turnike Kart Okuy
