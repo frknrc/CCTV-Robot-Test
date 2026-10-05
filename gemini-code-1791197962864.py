@@ -13,6 +13,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.graphics.shapes import Drawing, Circle, String, Rect, Group, Polygon, Path
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -33,7 +34,6 @@ st.markdown(hide_st_style, unsafe_allow_html=True)
 
 # --- ÜLKE/ŞEHİR SEÇİMİNE GÖRE SAAT DİLİMİ HARİTASI ---
 COUNTRY_TIMEZONES = {
-    # Türkçe Ülke İsimleri
     "Türkiye": "Europe/Istanbul",
     "Kazakistan": "Asia/Almaty",
     "Azerbaycan": "Asia/Baku",
@@ -45,7 +45,6 @@ COUNTRY_TIMEZONES = {
     "Kırgızistan": "Asia/Bishkek",
     "Almanya": "Europe/Berlin",
     
-    # İngilizce Ülke İsimleri
     "Turkey": "Europe/Istanbul",
     "Kazakhstan": "Asia/Almaty",
     "Azerbaijan": "Asia/Baku",
@@ -57,7 +56,6 @@ COUNTRY_TIMEZONES = {
     "Kyrgyzstan": "Asia/Bishkek",
     "Germany": "Europe/Berlin",
     
-    # Kazakça Ülke İsimleri
     "Түркия": "Europe/Istanbul",
     "Қазақстан": "Asia/Almaty",
     "Әзірбайжан": "Asia/Baku",
@@ -495,6 +493,41 @@ TEXTS = {
     }
 }
 
+# --- PDF İÇİN KUSURSUR VE BAĞIMSIZ TAV TECHNOLOGIES LOGO ÇİZİMİ ---
+def get_tav_logo_drawing():
+    d = Drawing(260, 42)
+    
+    # 1. Dünya / Yer Küre Şekli (Açık Mavi Katmanlar)
+    d.add(Circle(20, 20, 18, fillColor=colors.HexColor("#0072CE"), strokeColor=None))
+    
+    # Küre üzerindeki beyaz elips yayları
+    p1 = Path(fillColor=colors.white, strokeColor=None)
+    p1.moveTo(4, 20)
+    p1.curveTo(4, 28, 36, 28, 36, 20)
+    p1.curveTo(36, 24, 4, 24, 4, 20)
+    d.add(p1)
+
+    p2 = Path(fillColor=colors.white, strokeColor=None)
+    p2.moveTo(2, 14)
+    p2.curveTo(2, 22, 38, 22, 38, 14)
+    p2.curveTo(38, 18, 2, 18, 2, 14)
+    d.add(p2)
+
+    # Uçak Simgesi
+    plane = Polygon([28, 30, 34, 35, 32, 29, 36, 27, 33, 26, 30, 28], fillColor=colors.HexColor("#0072CE"), strokeColor=None)
+    d.add(plane)
+
+    # 2. "TAV" Ana Metni (Koyu Mavi Koyu Punto)
+    d.add(String(48, 12, "TAV", fontName="Helvetica-Bold", fontSize=24, fillColor=colors.HexColor("#1A365D")))
+    
+    # 3. Dikey Ayrım Çizgisi
+    d.add(Rect(108, 10, 1.2, 22, fillColor=colors.HexColor("#CBD5E0"), strokeColor=None))
+    
+    # 4. "TECHNOLOGIES" Alt/Yan Metni
+    d.add(String(116, 15, "TECHNOLOGIES", fontName="Helvetica-Bold", fontSize=13, fillColor=colors.HexColor("#2B6CB0")))
+    
+    return d
+
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -567,17 +600,9 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         leading=14
     )
 
-    logo_text_style = ParagraphStyle(
-        'LogoText',
-        fontName='Helvetica-Bold',
-        fontSize=20,
-        leading=24,
-        textColor=colors.HexColor("#1A365D")
-    )
-
-    # --- ŞIK METİN LOGOSU ("TAV Technologies") ---
-    story.append(Paragraph("<b>TAV Technologies</b>", logo_text_style))
-    story.append(Spacer(1, 10))
+    # --- GERÇEK VE BAĞIMSIZ TAV TECHNOLOGIES LOGOSU ---
+    story.append(get_tav_logo_drawing())
+    story.append(Spacer(1, 15))
 
     story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
     story.append(Paragraph(safe_str(f"<b>Havalimani / Proje Adi:</b> {project_name}"), normal_style))
