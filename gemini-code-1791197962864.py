@@ -6,14 +6,6 @@ import os
 from datetime import datetime
 import pytz
 
-# PDF Oluşturma Kütüphaneleri
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
     page_title="Zayıf Akım Sistem Planlama Botu",
@@ -21,15 +13,37 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- ÜST MENÜ VE GİTHUB SİMGELERİNİ MÜŞTERİDEN GİZLEME (CSS) ---
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_st_style, unsafe_allow_html=True)
+# --- ÜST MENÜ, GİTHUB SİMGELERİ VE DİNAMİK "PRESS ENTER TO APPLY" ÇEVİRİSİ (CSS) ---
+def apply_custom_language_styles(lang_code):
+    # Diller için Enter Ipucu Metinleri
+    instructions = {
+        "TR": "Uygulamak için Enter'a basınız",
+        "EN": "Press Enter to apply",
+        "KK": "Қолдану үшін Enter пернесін басыңыз"
+    }
+    
+    selected_text = instructions.get(lang_code, "Uygulamak için Enter'a basınız")
+    
+    custom_css = f"""
+    <style>
+    /* Streamlit Ust/Alt Menuleri Gizleme */
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
+    
+    /* Input alanlarindaki 'Press Enter to apply' metnini Türkçe/Kazakça değiştirme */
+    div[data-testid="InputInstructions"] {{
+        font-size: 0px !important;
+    }}
+    div[data-testid="InputInstructions"]::after {{
+        content: "{selected_text}";
+        font-size: 12px !important;
+        color: #A0AEC0 !important;
+        visibility: visible !important;
+    }}
+    </style>
+    """
+    st.markdown(custom_css, unsafe_allow_html=True)
 
 # --- ÜLKE/ŞEHİR SEÇİMİNE GÖRE SAAT DİLİMİ HARİTASI ---
 COUNTRY_TIMEZONES = {
@@ -90,7 +104,7 @@ LOCATION_DATA = {
         "Saudi Arabia": ["Riyadh", "Jeddah", "Mecca", "Medina", "Dammam", "Other"],
         "United Arab Emirates": ["Dubai", "Abu Dhabi", "Sharjah", "Other"],
         "Qatar": ["Doha", "Al Rayyan", "Other"],
-        "Uzbekistan": ["Tashkent", "Samarkand", "Bukhara", "Other"],
+        "Uzbekistan": ["Tashkent", "Samarkand", "Buhara", "Other"],
         "Kyrgyzstan": ["Bishkek", "Osh", "Other"],
         "Germany": ["Berlin", "Munich", "Frankfurt", "Hamburg", "Other"],
         "Other": ["Other"]
@@ -119,7 +133,6 @@ TEXTS = {
         "project_name_label": "📌 Havalimanı / Proje Adı (Zorunlu)",
         "project_name_placeholder": "Lütfen proje adını yazınız...",
         "warning_no_project": "🚨 Rapor oluşturabilmek için 'Havalimanı / Proje Adı' alanını doldurmanız zorunludur!",
-        "warning_missing_inputs": "🚨 Lütfen seçili sistemlerdeki zorunlu parametreleri doldurunuz!",
         "country_label": "🌍 Ülke",
         "city_label": "🏙️ Şehir",
         "select_systems_title": "🎯 Planlanacak Zayıf Akım Sistemlerini Seçiniz",
@@ -246,7 +259,6 @@ TEXTS = {
         "project_name_label": "📌 Airport / Project Name (Required)",
         "project_name_placeholder": "Please enter project name...",
         "warning_no_project": "🚨 'Airport / Project Name' is required to generate a report!",
-        "warning_missing_inputs": "🚨 Please fill in the required parameters in selected systems!",
         "country_label": "🌍 Country",
         "city_label": "🏙️ City",
         "select_systems_title": "🎯 Select ELV Systems to Plan",
@@ -373,7 +385,6 @@ TEXTS = {
         "project_name_label": "📌 Әуежай / Жоба атауы (Міндетті)",
         "project_name_placeholder": "Жоба атауын енгізіңіз...",
         "warning_no_project": "🚨 Есепті қалыптастыру үшін 'Әуежай / Жоба атауы' өрісін толтыру міндетті!",
-        "warning_missing_inputs": "🚨 Таңдалған жүйелердегі міндетті параметрлерді толтырыңыз!",
         "country_label": "🌍 Ел",
         "city_label": "🏙️ Қала",
         "select_systems_title": "🎯 Жоспарланатын әлсіз тоқ жүйелерін таңдаңыз",
@@ -496,6 +507,13 @@ TEXTS = {
 }
 
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -575,7 +593,7 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         textColor=colors.HexColor("#1A365D")
     )
 
-    # --- SADECE ŞIK KURUMSAL METİN BAŞLIĞI ---
+    # --- ŞIK KURUMSAL METİN BAŞLIĞI ---
     story.append(Paragraph("<b>TAV Technologies</b>", logo_text_style))
     story.append(Spacer(1, 10))
 
@@ -671,7 +689,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- BAŞLIK ALANI ---
+# --- BAŞLIK VE DİL SEÇİMİ ---
 c_lang, c_country, c_city = st.columns(3)
 with c_lang:
     selected_lang = st.selectbox(
@@ -680,6 +698,9 @@ with c_lang:
         format_func=lambda x: {"TR": "TR Türkçe", "EN": "EN English", "KK": "KK Қазақша"}[x],
         index=0
     )
+
+# SEÇİLEN DİLE GÖRE CSS DİNAMİK YÖNLENDİRME METNİNİ ENJEKTE ET
+apply_custom_language_styles(selected_lang)
 
 t = TEXTS[selected_lang]
 current_locations = LOCATION_DATA[selected_lang]
@@ -834,8 +855,6 @@ else:
 
             now_str = datetime.now(user_tz).strftime("%d.%m.%Y - %H:%M")
             display_proj_name = project_name.strip()
-
-            valid_calculation = True
 
             for sys in selected_systems:
                 # 1. CCTV HESAPLAMA
