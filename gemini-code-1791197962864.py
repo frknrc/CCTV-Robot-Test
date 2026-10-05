@@ -583,6 +583,24 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
     buffer.seek(0)
     return buffer.getvalue()
 
+# --- EXCEL OLUŞTURMA FONKSİYONU ---
+def generate_excel(results, inputs_summary, t_labels):
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        for sys_key, df_out in results.items():
+            sheet_name = sys_key.replace("/", "-")[:30]
+            
+            start_row = 0
+            if sys_key in inputs_summary:
+                df_in = inputs_summary[sys_key]
+                df_in.to_excel(writer, sheet_name=sheet_name, startrow=start_row, index=False)
+                start_row += len(df_in) + 3
+            
+            df_out.to_excel(writer, sheet_name=sheet_name, startrow=start_row, index=False)
+            
+    output.seek(0)
+    return output.getvalue()
+
 # --- HELPER FUNC: YEDEKLİLİK HESAPLAMA VE DATAFRAME OLUŞTURMA ---
 def create_output_df(items_data, redundancy_pct, t_labels):
     rows = []
@@ -915,6 +933,7 @@ else:
                     st.markdown(f"#### {t['outputs_header']}")
                     st.dataframe(calculated_results[sys_key], use_container_width=True, hide_index=True)
 
+        # --- İNDİRME ALANI (PDF & EXCEL) ---
         st.markdown("---")
         st.subheader(t["download_section"])
 
@@ -928,13 +947,31 @@ else:
             t_labels=t
         )
 
-        pdf_filename = f"{display_proj_name.replace(' ', '_')}_Report.pdf"
-
-        st.download_button(
-            label=t["download_pdf_btn"],
-            data=pdf_bytes,
-            file_name=pdf_filename,
-            mime="application/pdf",
-            use_container_width=True,
-            type="primary"
+        excel_bytes = generate_excel(
+            results=calculated_results,
+            inputs_summary=inputs_summary,
+            t_labels=t
         )
+
+        file_prefix = display_proj_name.replace(' ', '_')
+        pdf_filename = f"{file_prefix}_Report.pdf"
+        excel_filename = f"{file_prefix}_Report.xlsx"
+
+        col_pdf, col_excel = st.columns(2)
+        with col_pdf:
+            st.download_button(
+                label=t["download_pdf_btn"],
+                data=pdf_bytes,
+                file_name=pdf_filename,
+                mime="application/pdf",
+                use_container_width=True,
+                type="primary"
+            )
+        with col_excel:
+            st.download_button(
+                label="📊 Excel Raporunu İndir",
+                data=excel_bytes,
+                file_name=excel_filename,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
