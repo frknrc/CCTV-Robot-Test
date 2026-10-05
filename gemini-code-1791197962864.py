@@ -84,9 +84,9 @@ TEXTS = {
         "page_title": "Zayıf Akım Sistem Planlama Botu",
         "pdf_title": "Zayıf Akım Sistem Planlama Raporu",
         "caption": "Lütfen projenize ait verileri girerek donanım ve altyapı ihtiyaç raporunu oluşturun.",
-        "project_name_label": "📌 Havalimanı / Proje Adı*",
-        "project_name_placeholder": "Proje adını giriniz...",
-        "warning_no_project": "⚠ Lütfen rapor oluşturabilmek için bir Havalimanı / Proje Adı giriniz!",
+        "project_name_label": "📌 Havalimanı / Proje Adı (Zorunlu)",
+        "project_name_placeholder": "Lütfen proje adını yazınız...",
+        "warning_no_project": "🚨 Rapor oluşturabilmek için 'Havalimanı / Proje Adı' alanını doldurmanız zorunludur!",
         "country_label": "🌍 Ülke",
         "city_label": "🏙️ Şehir",
         "select_systems_title": "🎯 Planlanacak Zayıf Akım Sistemlerini Seçiniz",
@@ -210,9 +210,9 @@ TEXTS = {
         "page_title": "ELV Systems Planning Bot",
         "pdf_title": "ELV Systems Planning Report",
         "caption": "Please enter your project details to generate the hardware and infrastructure requirements report.",
-        "project_name_label": "📌 Airport / Project Name*",
-        "project_name_placeholder": "Enter project name...",
-        "warning_no_project": "⚠ Please enter an Airport / Project Name to generate a report!",
+        "project_name_label": "📌 Airport / Project Name (Required)",
+        "project_name_placeholder": "Please enter project name...",
+        "warning_no_project": "🚨 'Airport / Project Name' is required to generate a report!",
         "country_label": "🌍 Country",
         "city_label": "🏙️ City",
         "select_systems_title": "🎯 Select ELV Systems to Plan",
@@ -336,9 +336,9 @@ TEXTS = {
         "page_title": "Әлсіз тоқ жүйелерін жоспарлау боты",
         "pdf_title": "Әлсіз тоқ жүйелерін жоспарлау есебі",
         "caption": "Жабдық пен инфрақұрылым талаптарының есебін жасау үшін жоба мәліметтерін енгізіңіз.",
-        "project_name_label": "📌 Әуежай / Жоба атауы*",
+        "project_name_label": "📌 Әуежай / Жоба атауы (Міндетті)",
         "project_name_placeholder": "Жоба атауын енгізіңіз...",
-        "warning_no_project": "⚠ Есепті қалыптастыру үшін Әуежай / Жоба атауын енгізіңіз!",
+        "warning_no_project": "🚨 Есепті қалыптастыру үшін 'Әуежай / Жоба атауы' өрісін толтыру міндетті!",
         "country_label": "🌍 Ел",
         "city_label": "🏙️ Қала",
         "select_systems_title": "🎯 Жоспарланатын әлсіз тоқ жүйелерін таңдаңыз",
@@ -547,7 +547,6 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         textColor=colors.HexColor("#E2E8F0")
     )
 
-    # --- TAV LOGO TABLOSU ---
     logo_table_data = [
         [
             Paragraph("<b>TAV</b>", logo_tav_style),
@@ -567,10 +566,8 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
     story.append(logo_table)
     story.append(Spacer(1, 15))
 
-    proj_title = project_name if project_name.strip() else "-"
-
     story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
-    story.append(Paragraph(safe_str(f"<b>{t_labels['project_name_label'].replace('*', '')}:</b> {proj_title}"), normal_style))
+    story.append(Paragraph(safe_str(f"<b>Havalimani / Proje Adi:</b> {project_name}"), normal_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['location_label']}:</b> {country} / {city}"), normal_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['report_date_label']}:</b> {report_datetime_str}"), normal_style))
     story.append(Spacer(1, 12))
@@ -578,7 +575,6 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
     for sys_key, df_out in results.items():
         story.append(Paragraph(safe_str(f"<b>{sys_key}</b>"), subtitle_style))
 
-        # Girdiler Tablosu
         if sys_key in inputs_summary:
             story.append(Paragraph(safe_str(t_labels['inputs_header']), section_style))
             df_in = inputs_summary[sys_key].copy()
@@ -602,7 +598,6 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
             story.append(t_in)
             story.append(Spacer(1, 8))
 
-        # Çıktılar Tablosu
         story.append(Paragraph(safe_str(t_labels['outputs_header']), section_style))
         df_out_clean = df_out.copy()
         for col in df_out_clean.columns:
@@ -630,7 +625,6 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
     buffer.seek(0)
     return buffer.getvalue()
 
-# --- EXCEL OLUŞTURMA FONKSİYONU ---
 def generate_excel(results, inputs_summary, t_labels):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -648,7 +642,6 @@ def generate_excel(results, inputs_summary, t_labels):
     output.seek(0)
     return output.getvalue()
 
-# --- HELPER FUNC: YEDEKLİLİK HESAPLAMA VE DATAFRAME OLUŞTURMA ---
 def create_output_df(items_data, redundancy_pct, t_labels):
     rows = []
     factor = float(redundancy_pct) / 100.0
@@ -671,7 +664,6 @@ col_logo, col_title = st.columns([1.5, 3.5])
 with col_logo:
     st.image(logo_url, width=320)
 with col_title:
-    # --- DİL VE KONUM SEÇİM ALANI ---
     c_lang, c_country, c_city = st.columns(3)
     with c_lang:
         selected_lang = st.selectbox(
@@ -738,7 +730,6 @@ else:
                     key="cctv_type"
                 )
                 
-                # Hizalı 2 Sütunlu Yapı
                 c1, c2 = st.columns(2)
                 with c1:
                     inputs['cctv_sqm'] = st.number_input(t["cctv_sqm"], min_value=1000, value=75000, step=5000, key="c_sqm")
@@ -819,14 +810,13 @@ else:
 
     # --- HESAPLAMA MANTIĞI VE SONUÇLAR ---
     if submit_button:
-        # ZORUNLU KONTROL: Proje Adı Girilmediyse İşlemi Durdur ve Uyar
-        if not project_name.strip():
+        # KESİN ZORUNLU KONTROL: Proje adı yazılmadıysa hiçbir şey hesaplama ve indirme butonu koyma
+        if not project_name or not project_name.strip():
             st.error(t["warning_no_project"])
         else:
             calculated_results = {}
             inputs_summary = {}
 
-            # Tarayıcı Saat Dilimi
             try:
                 if user_timezone_str and isinstance(user_timezone_str, str):
                     user_tz = pytz.timezone(user_timezone_str)
