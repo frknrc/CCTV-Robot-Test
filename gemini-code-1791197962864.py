@@ -2,12 +2,15 @@ import streamlit as st
 import math
 import pandas as pd
 import io
+import os
 
 # PDF Oluşturma Kütüphaneleri
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -201,10 +204,34 @@ def generate_pdf(project_name, results):
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
     story = []
     
+    # Türkçe font ve dönüştürme ayarı
+    font_name = "Helvetica"
+    font_bold_name = "Helvetica-Bold"
+    
+    try:
+        font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        font_bold_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+        if os.path.exists(font_path) and os.path.exists(font_bold_path):
+            pdfmetrics.registerFont(TTFont('TRFont', font_path))
+            pdfmetrics.registerFont(TTFont('TRFont-Bold', font_bold_path))
+            font_name = 'TRFont'
+            font_bold_name = 'TRFont-Bold'
+    except:
+        pass
+
+    def safe_str(val):
+        text = str(val)
+        if font_name == "Helvetica":
+            tr_map = {'ı': 'i', 'İ': 'I', 'ğ': 'g', 'Ğ': 'G', 'ü': 'u', 'Ü': 'U', 'ş': 's', 'Ş': 'S', 'ö': 'o', 'Ö': 'O', 'ç': 'c', 'Ç': 'C'}
+            for k, v in tr_map.items():
+                text = text.replace(k, v)
+        return text
+
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
         'TitleStyle',
         parent=styles['Heading1'],
+        fontName=font_bold_name,
         fontSize=18,
         leading=22,
         textColor=colors.HexColor("#1A365D"),
@@ -213,34 +240,48 @@ def generate_pdf(project_name, results):
     subtitle_style = ParagraphStyle(
         'SubTitleStyle',
         parent=styles['Heading2'],
+        fontName=font_bold_name,
         fontSize=13,
         leading=16,
         textColor=colors.HexColor("#2B6CB0"),
         spaceBefore=12,
         spaceAfter=6
     )
+    normal_style = ParagraphStyle(
+        'NormalTR',
+        parent=styles['Normal'],
+        fontName=font_name,
+        fontSize=10,
+        leading=12
+    )
 
-    story.append(Paragraph(f"Zayif Akim Sistem Planlama Raporu", title_style))
-    story.append(Paragraph(f"<b>Proje Adı:</b> {project_name}", styles['Normal']))
+    story.append(Paragraph(safe_str("Zayıf Akım Sistem Planlama Raporu"), title_style))
+    story.append(Paragraph(safe_str(f"<b>Proje Adı:</b> {project_name}"), normal_style))
     story.append(Spacer(1, 15))
 
-    for sys_key, df in results.items():
-        story.append(Paragraph(f"<b>{sys_key} Metrikleri</b>", subtitle_style))
-        
-        table_data = [df.columns.tolist()] + df.values.tolist()
-        t = Table(table_data, colWidths=[240, 100, 100])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#2B6CB0")),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor("#F7FAFC")),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
-        ]))
-        story.append(t)
-        story.append(Spacer(1, 15))
+   for sys_key, df in results.items():
+    story.append(Paragraph(safe_str(f"<b>{sys_key} Metrikleri</b>"), subtitle_style))
+
+    cleaned_df = df.copy()
+    for col in cleaned_df.columns:
+        cleaned_df[col] = cleaned_df[col].apply(safe_str)
+    cleaned_df.columns = [safe_str(c) for c in cleaned_df.columns]
+
+    table_data = [cleaned_df.columns.tolist()] + cleaned_df.values.tolist()
+    t = Table(table_data, colWidths=[240, 100, 100])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#2B6CB0")),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), font_bold_name),
+        ('FONTNAME', (0, 1), (-1, -1), font_name),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor("#F7FAFC")),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 15))
 
     doc.build(story)
     buffer.seek(0)
