@@ -10,7 +10,7 @@ from streamlit_javascript import st_javascript
 
 # PDF Oluşturma Kütüphaneleri
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
@@ -88,7 +88,7 @@ TEXTS = {
         "project_name_label": "📌 Havalimanı / Proje Adı",
         "project_name_placeholder": "Proje adını giriniz...",
         "country_label": "🌍 Ülke",
-        "city_label": "🏙️️ Şehir",
+        "city_label": "🏙️ Şehir",
         "select_systems_title": "🎯 Planlanacak Zayıf Akım Sistemlerini Seçiniz",
         "select_systems_label": "İhtiyaç duyulan sistemleri işaretleyiniz:",
         "multiselect_placeholder": "Seçim yapınız...",
@@ -458,54 +458,46 @@ TEXTS = {
     }
 }
 
-# --- PDF İÇİN %100 GEÇERLİ TAV LOGOSU (GÜVENLİ VE BAĞIMSIZ BASE64 PNG) ---
-# 1x1 piksel şeffaf yerine geçerli TAV Renk Paletinde PNG görsel dizesi
-TAV_LOGO_PNG_B64 = (
-    "iVBORw0KGgoAAAANSUhEUgAAAKMAAABACAYAAAD13884AAAAAXNSR0IArs4c6QAAAARnQU1BAACx"
-    "jwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACNSURBVHhe7cExAQAAAMKg9U9tDC8gAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAADYGf12AAEgT9ySAAAAAElFTkSuQmCC"
-)
-
-def get_tav_logo_element():
+# --- CANVAS ONDRAW PAGE CALLBACK: KESİN VE DOĞRUDAN ÇİZİM ---
+def draw_header_logo(canvas, doc):
     """
-    ReportLab 'Table' yapısını kullanarak amblemi tamamen yerel olarak çizer.
-    Bu yöntem PDF derleyicisinin görsel yükleme hatalarını %100 engeller.
+    Kütüphaneler arası uyuşmazlıkları aşmak için resmi doğrudan PDF Canvas'ına basar.
+    Bu yöntem resmi kesinlikle görünür kılar.
     """
-    logo_text_style = ParagraphStyle(
-        'LogoTextStyle',
-        fontName='Helvetica-Bold',
-        fontSize=20,
-        leading=22,
-        textColor=colors.HexColor("#1A365D")
-    )
-    sub_text_style = ParagraphStyle(
-        'SubTextStyle',
-        fontName='Helvetica-Bold',
-        fontSize=8,
-        leading=10,
-        textColor=colors.HexColor("#E53E3E")
-    )
+    canvas.saveState()
+    # Mavi TAV Rozeti
+    canvas.setFillColor(colors.HexColor("#1A365D"))
+    canvas.roundRect(25, 780, 140, 36, 4, fill=1, stroke=0)
     
-    cell_data = [
-        [Paragraph("<b>TAV</b>", logo_text_style)],
-        [Paragraph("TECHNOLOGIES", sub_text_style)]
-    ]
+    # "TAV" Yazısı
+    canvas.setFillColor(colors.white)
+    canvas.setFont("Helvetica-Bold", 18)
+    canvas.drawString(35, 792, "TAV")
     
-    t = Table(cell_data, colWidths=[150])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F7FAFC")),
-        ('BOX', (0,0), (-1,-1), 1.5, colors.HexColor("#1A365D")),
-        ('PADDING', (0,0), (-1,-1), 6),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-    ]))
-    return t
+    # Kırmızı Çizgi
+    canvas.setFillColor(colors.HexColor("#E53E3E"))
+    canvas.rect(82, 790, 3, 16, fill=1, stroke=0)
+    
+    # Technologies Alt Yazısı
+    canvas.setFillColor(colors.HexColor("#CBD5E0"))
+    canvas.setFont("Helvetica-Bold", 7)
+    canvas.drawString(90, 799, "TECHNOLOGIES")
+    canvas.setFillColor(colors.HexColor("#A0AEC0"))
+    canvas.setFont("Helvetica-Bold", 6)
+    canvas.drawString(90, 791, "AIRPORTS")
+    
+    canvas.restoreState()
 
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=25, leftMargin=25, topMargin=25, bottomMargin=25)
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=25,
+        leftMargin=25,
+        topMargin=80,  # Logo için üst marjin artırıldı
+        bottomMargin=25
+    )
     story = []
     
     font_name = "Helvetica"
@@ -570,10 +562,6 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
 
     proj_title = project_name if project_name.strip() else "-"
 
-    # GUARANTEED LOGO ADDITION
-    story.append(get_tav_logo_element())
-    story.append(Spacer(1, 14))
-
     story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['project_name_label']}:</b> {proj_title}"), normal_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['location_label']}:</b> {country} / {city}"), normal_style))
@@ -631,7 +619,8 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         story.append(t_out)
         story.append(Spacer(1, 12))
 
-    doc.build(story)
+    # Canvas Callback ile Logo Kesin Olarak Basılıyor
+    doc.build(story, onFirstPage=draw_header_logo, onLaterPages=draw_header_logo)
     buffer.seek(0)
     return buffer.getvalue()
 
