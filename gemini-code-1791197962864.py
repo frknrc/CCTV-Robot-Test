@@ -3,6 +3,7 @@ import math
 import pandas as pd
 import io
 import os
+from datetime import datetime
 
 # PDF Oluşturma Kütüphaneleri
 from reportlab.lib.pagesizes import A4
@@ -42,6 +43,7 @@ TEXTS = {
         "submit_btn": "🚀 Tüm Seçili Sistemlerin İhtiyaç Raporunu Oluştur",
         "report_success": "✅ **{project}** İçin Seçilen Sistem Planlama Raporu Başarıyla Hesaplandı!",
         "download_section": "📥 Rapor Çıktısı Alın",
+        "report_date_label": "Rapor Tarihi",
         "cctv_title": "🎥 CCTV Kamera Güvenlik Sistemi",
         "cctv_scope": "Havalimanı Kapsamı:",
         "cctv_opt1": "Uluslararası Transit Hub (Yüksek Güvenlik / Yoğun Yolcu)",
@@ -97,6 +99,7 @@ TEXTS = {
         "submit_btn": "🚀 Generate Requirements Report for Selected Systems",
         "report_success": "✅ Planning report successfully generated for **{project}**!",
         "download_section": "📥 Download Report",
+        "report_date_label": "Report Date",
         "cctv_title": "🎥 CCTV Surveillance System",
         "cctv_scope": "Airport Scope:",
         "cctv_opt1": "International Transit Hub (High Security / High Traffic)",
@@ -152,6 +155,7 @@ TEXTS = {
         "submit_btn": "🚀 Таңдалған жүйелер бойынша есепті қалыптастыру",
         "report_success": "✅ **{project}** жобасы үшін жоспарлау есебі сәтті есептелді!",
         "download_section": "📥 Есепті жүктеп алу",
+        "report_date_label": "Есеп күні",
         "cctv_title": "🎥 CCTV Бейнебақылау жүйесі",
         "cctv_scope": "Әуежай ауқымы:",
         "cctv_opt1": "Халықаралық транзиттік хаб (Жоғары қауіпсіздік / Қарқынды)",
@@ -199,7 +203,7 @@ TEXTS = {
 }
 
 # --- PDF OLUŞTURMA FONKSİYONU ---
-def generate_pdf(project_name, results):
+def generate_pdf(project_name, results, report_datetime_str, date_label):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
     story = []
@@ -252,11 +256,12 @@ def generate_pdf(project_name, results):
         parent=styles['Normal'],
         fontName=font_name,
         fontSize=10,
-        leading=12
+        leading=14
     )
 
     story.append(Paragraph(safe_str("Zayıf Akım Sistem Planlama Raporu"), title_style))
     story.append(Paragraph(safe_str(f"<b>Proje Adı:</b> {project_name}"), normal_style))
+    story.append(Paragraph(safe_str(f"<b>{date_label}:</b> {report_datetime_str}"), normal_style))
     story.append(Spacer(1, 15))
 
     for sys_key, df in results.items():
@@ -410,6 +415,7 @@ else:
     # --- HESAPLAMA MANTIĞI VE SONUÇLAR ---
     if submit_button:
         calculated_results = {}
+        now_str = datetime.now().strftime("%d.%m.%Y - %H:%M")
 
         for sys in selected_systems:
             # 1. CCTV HESAPLAMA
@@ -497,10 +503,12 @@ else:
         st.session_state['results'] = calculated_results
         st.session_state['project_name'] = project_name
         st.session_state['selected_systems'] = selected_systems
+        st.session_state['report_datetime'] = now_str
 
     # --- EKRANA BASMA VE İNDİRME BUTONLARI ---
     if 'results' in st.session_state and st.session_state['results']:
         st.success(t["report_success"].format(project=st.session_state['project_name']))
+        st.caption(f"📅 {t['report_date_label']}: {st.session_state['report_datetime']}")
 
         res_tabs = st.tabs([f"📊 {s}" for s in st.session_state['selected_systems']])
 
@@ -514,15 +522,27 @@ else:
         st.markdown("---")
         st.subheader(t["download_section"])
 
-        # EXCEL OLUŞTURMA
+        # EXCEL OLUŞTURMA (Özet/Tarih Bilgili Sayfa Dahil)
         excel_buffer = io.BytesIO()
         with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            # Genel Bilgi Sayfası
+            info_df = pd.DataFrame([
+                {"Parametre": t["project_name_label"], "Değer": st.session_state['project_name']},
+                {"Parametre": t["report_date_label"], "Değer": st.session_state['report_datetime']}
+            ])
+            info_df.to_excel(writer, sheet_name="Genel Bilgi", index=False)
+
             for sys_key, df_res in st.session_state['results'].items():
                 df_res.to_excel(writer, sheet_name=sys_key, index=False)
         excel_data = excel_buffer.getvalue()
 
         # PDF OLUŞTURMA
-        pdf_data = generate_pdf(st.session_state['project_name'], st.session_state['results'])
+        pdf_data = generate_pdf(
+            st.session_state['project_name'], 
+            st.session_state['results'], 
+            st.session_state['report_datetime'],
+            t['report_date_label']
+        )
 
         col_dl1, col_dl2 = st.columns(2)
         with col_dl1:
