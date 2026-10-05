@@ -39,7 +39,7 @@ user_timezone_str = st_javascript("Intl.DateTimeFormat().resolvedOptions().timeZ
 LOCATION_DATA = {
     "Türkiye": ["İstanbul", "Ankara", "İzmir", "Antalya", "Bursa", "Adana", "Gaziantep", "Trabzon", "Muğla", "Diğer"],
     "Kazakistan": ["Astana", "Almatı", "Çimkent", "Aktau", "Atırau", "Karağandı", "Aktöbe", "Diğer"],
-    "Azerbaycan": ["Bakü", "Gence", "Sumgayıt", "Hocalı", "Gence", "Diğer"],
+    "Azerbaycan": ["Bakü", "Gence", "Sumgayıt", "Hocalı", "Diğer"],
     "Gürcistan": ["Tiflis", "Batum", "Kutais", "Diğer"],
     "Suudi Arabistan": ["Riyad", "Cidde", "Mekke", "Medine", "Dammam", "Diğer"],
     "Birleşik Arap Emirlikleri": ["Dubai", "Abu Dabi", "Şarja", "Diğer"],
@@ -69,6 +69,12 @@ TEXTS = {
         "location_label": "Konum",
         "inputs_header": "📋 Girdi Parametreleri (Tasarım Kriterleri)",
         "outputs_header": "📊 Hesaplanan İhtiyaçlar (Sistem Çıktıları)",
+        "redundancy_label": "⚙️ Yedeklilik / Marjin Oranı (%)",
+        "col_metric": "Bileşen / Metrik",
+        "col_base": "Ana İhtiyaç",
+        "col_redundancy": "Yedek Miktar",
+        "col_total": "Toplam Miktar",
+        "col_unit": "Birim",
         "cctv_title": "🎥 CCTV Kamera Güvenlik Sistemi",
         "cctv_scope": "Havalimanı Kapsamı:",
         "cctv_opt1": "Uluslararası Transit Hub (Yüksek Güvenlik / Yoğun Yolcu)",
@@ -130,6 +136,12 @@ TEXTS = {
         "location_label": "Location",
         "inputs_header": "📋 Input Parameters (Design Criteria)",
         "outputs_header": "📊 Calculated Requirements (System Outputs)",
+        "redundancy_label": "⚙️ Redundancy / Margin Rate (%)",
+        "col_metric": "Component / Metric",
+        "col_base": "Base Requirement",
+        "col_redundancy": "Redundant Qty",
+        "col_total": "Total Qty",
+        "col_unit": "Unit",
         "cctv_title": "🎥 CCTV Surveillance System",
         "cctv_scope": "Airport Scope:",
         "cctv_opt1": "International Transit Hub (High Security / High Traffic)",
@@ -191,6 +203,12 @@ TEXTS = {
         "location_label": "Орналасқан жері",
         "inputs_header": "📋 Енгізілген параметрлер (Жобалау критерийлері)",
         "outputs_header": "📊 Есептелген қажеттіліктер (Жүйе нәтижелері)",
+        "redundancy_label": "⚙️ Резервтеу / Маржа коэффициенті (%)",
+        "col_metric": "Компонент / Метрика",
+        "col_base": "Негізгі қажеттілік",
+        "col_redundancy": "Резервтік мөлшер",
+        "col_total": "Жалпы мөлшер",
+        "col_unit": "Өлшем бірлігі",
         "cctv_title": "🎥 CCTV Бейнебақылау жүйесі",
         "cctv_scope": "Әуежай ауқымы:",
         "cctv_opt1": "Халықаралық транзиттік хаб (Жоғары қауіпсіздік / Қарқынды)",
@@ -240,7 +258,7 @@ TEXTS = {
 # --- PDF OLUŞTURMA FONKSİYONU ---
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=25, leftMargin=25, topMargin=25, bottomMargin=25)
     story = []
     
     font_name = "Helvetica"
@@ -307,7 +325,7 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
     story.append(Paragraph(safe_str(f"<b>Proje Adı:</b> {project_name}"), normal_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['location_label']}:</b> {country} / {city}"), normal_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['report_date_label']}:</b> {report_datetime_str}"), normal_style))
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 12))
 
     for sys_key, df_out in results.items():
         story.append(Paragraph(safe_str(f"<b>{sys_key} Metrikleri</b>"), subtitle_style))
@@ -321,7 +339,7 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
             df_in.columns = [safe_str(c) for c in df_in.columns]
 
             t_in_data = [df_in.columns.tolist()] + df_in.values.tolist()
-            t_in = Table(t_in_data, colWidths=[240, 100, 100])
+            t_in = Table(t_in_data, colWidths=[240, 150, 100])
             t_in.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#4A5568")),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -344,24 +362,41 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         df_out_clean.columns = [safe_str(c) for c in df_out_clean.columns]
 
         t_out_data = [df_out_clean.columns.tolist()] + df_out_clean.values.tolist()
-        t_out = Table(t_out_data, colWidths=[240, 100, 100])
+        t_out = Table(t_out_data, colWidths=[180, 75, 75, 80, 80])
         t_out.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#2B6CB0")),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (-2, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), font_bold_name),
             ('FONTNAME', (0, 1), (-1, -1), font_name),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 5),
             ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor("#F7FAFC")),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
         ]))
         story.append(t_out)
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 12))
 
     doc.build(story)
     buffer.seek(0)
     return buffer.getvalue()
+
+# --- HELPER FUNC: YEDEKLİLİK HESAPLAMA VE DATAFRAME OLUŞTURMA ---
+def create_output_df(items_data, redundancy_pct, t_labels):
+    rows = []
+    factor = float(redundancy_pct) / 100.0
+    for name, base_val, unit in items_data:
+        red_val = math.ceil(base_val * factor) if base_val > 0 else 0
+        tot_val = base_val + red_val
+        rows.append({
+            t_labels["col_metric"]: name,
+            t_labels["col_base"]: base_val,
+            t_labels["col_redundancy"]: red_val,
+            t_labels["col_total"]: tot_val,
+            t_labels["col_unit"]: unit
+        })
+    return pd.DataFrame(rows)
 
 # --- LOGO VE BAŞLIK ---
 logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
@@ -424,6 +459,11 @@ else:
         with system_tabs[i]:
             if t["system_names"]["CCTV"] in sys:
                 st.markdown(f"### {t['cctv_title']}")
+                
+                inputs['cctv_redundancy'] = st.number_input(
+                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="c_red"
+                )
+                
                 inputs['cctv_airport_type'] = st.radio(
                     t["cctv_scope"],
                     [t["cctv_opt1"], t["cctv_opt2"]],
@@ -457,6 +497,11 @@ else:
 
             elif t["system_names"]["ACS"] in sys:
                 st.markdown(f"### {t['acs_title']}")
+                
+                inputs['acs_redundancy'] = st.number_input(
+                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="a_red"
+                )
+                
                 ac1, ac2 = st.columns(2)
                 with ac1:
                     st.markdown(f"**{t['acs_doors_sec']}**")
@@ -471,6 +516,11 @@ else:
 
             elif t["system_names"]["FAS"] in sys:
                 st.markdown(f"### {t['fas_title']}")
+                
+                inputs['fas_redundancy'] = st.number_input(
+                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="f_red"
+                )
+                
                 fc1, fc2 = st.columns(2)
                 with fc1:
                     inputs['fas_sqm'] = st.number_input(t["fas_sqm"], min_value=1000, value=75000, step=5000, key="f_sqm")
@@ -480,6 +530,11 @@ else:
 
             elif t["system_names"]["PA/VA"] in sys:
                 st.markdown(f"### {t['pava_title']}")
+                
+                inputs['pava_redundancy'] = st.number_input(
+                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="p_red"
+                )
+                
                 pc1, pc2 = st.columns(2)
                 with pc1:
                     inputs['pava_sqm'] = st.number_input(t["pava_sqm"], min_value=1000, value=75000, step=5000, key="p_sqm")
@@ -509,75 +564,84 @@ else:
         for sys in selected_systems:
             # 1. CCTV HESAPLAMA
             if t["system_names"]["CCTV"] in sys:
-                sqm_per_cam = 60 if inputs['cctv_airport_type'] == t["cctv_opt1"] else 90
-                fence_m_per_cam = 40 if inputs['cctv_airport_type'] == t["cctv_opt1"] else 60
+                red_pct = inputs.get('cctv_redundancy', 0)
+                sqm_per_cam = 60 if inputs.get('cctv_airport_type') == t["cctv_opt1"] else 90
+                fence_m_per_cam = 40 if inputs.get('cctv_airport_type') == t["cctv_opt1"] else 60
 
-                indoor_cams = math.ceil(inputs['cctv_sqm'] / sqm_per_cam)
-                fence_cams = math.ceil(inputs['cctv_fence_m'] / fence_m_per_cam)
-                checkpoint_cams = inputs['cctv_checkpoints'] * 4
-                anpr_cams = inputs['cctv_lanes'] * 2 if inputs.get('cctv_use_anpr', False) else 0
+                indoor_cams = math.ceil(inputs.get('cctv_sqm', 75000) / sqm_per_cam)
+                fence_cams = math.ceil(inputs.get('cctv_fence_m', 8000) / fence_m_per_cam)
+                checkpoint_cams = inputs.get('cctv_checkpoints', 20) * 4
+                anpr_cams = inputs.get('cctv_lanes', 8) * 2 if inputs.get('cctv_use_anpr', False) else 0
 
                 total_cams = indoor_cams + fence_cams + checkpoint_cams + anpr_cams
                 
                 bitrate_map = {"2MP": 3, "4MP": 5, "8MP": 10}
-                mbps_per_cam = bitrate_map.get(inputs['cctv_resolution'], 5)
-                storage_tb = math.ceil((total_cams * mbps_per_cam * 3600 * 24 * inputs['cctv_storage_days']) / (8 * 1024 * 1024))
+                mbps_per_cam = bitrate_map.get(inputs.get('cctv_resolution', "4MP"), 5)
+                storage_tb = math.ceil((total_cams * mbps_per_cam * 3600 * 24 * inputs.get('cctv_storage_days', 60)) / (8 * 1024 * 1024))
 
                 poe_switches_24p = math.ceil(total_cams / 20)
 
                 inputs_summary['CCTV'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["cctv_scope"], "Değer": inputs['cctv_airport_type'], "Birim": "-"},
-                    {"Girdi Parametresi": t["cctv_sqm"], "Değer": inputs['cctv_sqm'], "Birim": "m²"},
-                    {"Girdi Parametresi": t["cctv_checkpoints"], "Değer": inputs['cctv_checkpoints'], "Birim": "Nokta"},
-                    {"Girdi Parametresi": t["cctv_fence"], "Değer": inputs['cctv_fence_m'], "Birim": "Metre"},
-                    {"Girdi Parametresi": t["cctv_lanes"], "Değer": inputs['cctv_lanes'], "Birim": "Şerit"},
-                    {"Girdi Parametresi": t["cctv_cr"], "Değer": inputs['cctv_control_rooms'], "Birim": "Adet"},
-                    {"Girdi Parametresi": t["cctv_op"], "Değer": inputs['cctv_operators'], "Birim": "Masa"},
-                    {"Girdi Parametresi": t["cctv_days"], "Değer": inputs['cctv_storage_days'], "Birim": "Gün"},
-                    {"Girdi Parametresi": t["cctv_res"], "Değer": inputs['cctv_resolution'], "Birim": "-"}
+                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"},
+                    {"Girdi Parametresi": t["cctv_scope"], "Değer": inputs.get('cctv_airport_type'), "Birim": "-"},
+                    {"Girdi Parametresi": t["cctv_sqm"], "Değer": inputs.get('cctv_sqm'), "Birim": "m²"},
+                    {"Girdi Parametresi": t["cctv_checkpoints"], "Değer": inputs.get('cctv_checkpoints'), "Birim": "Nokta"},
+                    {"Girdi Parametresi": t["cctv_fence"], "Değer": inputs.get('cctv_fence_m'), "Birim": "Metre"},
+                    {"Girdi Parametresi": t["cctv_lanes"], "Değer": inputs.get('cctv_lanes'), "Birim": "Şerit"},
+                    {"Girdi Parametresi": t["cctv_cr"], "Değer": inputs.get('cctv_control_rooms'), "Birim": "Adet"},
+                    {"Girdi Parametresi": t["cctv_op"], "Değer": inputs.get('cctv_operators'), "Birim": "Masa"},
+                    {"Girdi Parametresi": t["cctv_days"], "Değer": inputs.get('cctv_storage_days'), "Birim": "Gün"},
+                    {"Girdi Parametresi": t["cctv_res"], "Değer": inputs.get('cctv_resolution'), "Birim": "-"}
                 ])
 
-                calculated_results['CCTV'] = pd.DataFrame([
-                    {"Bileşen / Metrik": "İç Mekan Kameraları", "Miktar": indoor_cams, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Çevre Güvenlik Kameraları", "Miktar": fence_cams, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Kontrol Noktası Kameraları", "Miktar": checkpoint_cams, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "ANPR (Plaka Tanıma) Kameraları", "Miktar": anpr_cams, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "TOPLAM KAMERA SAYISI", "Miktar": total_cams, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Gerekli Depolama Alanı (Net)", "Miktar": storage_tb, "Birim": "TB"},
-                    {"Bileşen / Metrik": "24-Port PoE Switch İhtiyacı", "Miktar": poe_switches_24p, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "VMS Lisans Sayısı", "Miktar": total_cams, "Birim": "Lisans"}
-                ])
+                items_data = [
+                    ("İç Mekan Kameraları", indoor_cams, "Adet"),
+                    ("Çevre Güvenlik Kameraları", fence_cams, "Adet"),
+                    ("Kontrol Noktası Kameraları", checkpoint_cams, "Adet"),
+                    ("ANPR (Plaka Tanıma) Kameraları", anpr_cams, "Adet"),
+                    ("TOPLAM KAMERA SAYISI", total_cams, "Adet"),
+                    ("Gerekli Depolama Alanı (Net)", storage_tb, "TB"),
+                    ("24-Port PoE Switch İhtiyacı", poe_switches_24p, "Adet"),
+                    ("VMS Lisans Sayısı", total_cams, "Lisans")
+                ]
+
+                calculated_results['CCTV'] = create_output_df(items_data, red_pct, t)
 
             # 2. ACS HESAPLAMA
             elif t["system_names"]["ACS"] in sys:
-                total_doors = inputs['acs_single_doors'] + inputs['acs_double_doors']
-                readers = (inputs['acs_single_doors'] * 2) + (inputs['acs_double_doors'] * 2) + (inputs['acs_turnstiles'] * 2)
-                controllers = math.ceil((total_doors + inputs['acs_turnstiles']) / 4)
+                red_pct = inputs.get('acs_redundancy', 0)
+                total_doors = inputs.get('acs_single_doors', 80) + inputs.get('acs_double_doors', 20)
+                readers = (inputs.get('acs_single_doors', 80) * 2) + (inputs.get('acs_double_doors', 20) * 2) + (inputs.get('acs_turnstiles', 16) * 2)
+                controllers = math.ceil((total_doors + inputs.get('acs_turnstiles', 16)) / 4)
 
                 inputs_summary['ACS'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["acs_s_doors"], "Değer": inputs['acs_single_doors'], "Birim": "Adet"},
-                    {"Girdi Parametresi": t["acs_d_doors"], "Değer": inputs['acs_double_doors'], "Birim": "Adet"},
-                    {"Girdi Parametresi": t["acs_turnstiles"], "Değer": inputs['acs_turnstiles'], "Birim": "Adet"},
-                    {"Girdi Parametresi": t["acs_users"], "Değer": inputs['acs_users'], "Birim": "Kullanıcı"},
-                    {"Girdi Parametresi": t["acs_face"], "Değer": inputs['acs_face_rec_qty'], "Birim": "Adet"},
-                    {"Girdi Parametresi": t["acs_finger"], "Değer": inputs['acs_fingerprint_qty'], "Birim": "Adet"}
+                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"},
+                    {"Girdi Parametresi": t["acs_s_doors"], "Değer": inputs.get('acs_single_doors'), "Birim": "Adet"},
+                    {"Girdi Parametresi": t["acs_d_doors"], "Değer": inputs.get('acs_double_doors'), "Birim": "Adet"},
+                    {"Girdi Parametresi": t["acs_turnstiles"], "Değer": inputs.get('acs_turnstiles'), "Birim": "Adet"},
+                    {"Girdi Parametresi": t["acs_users"], "Değer": inputs.get('acs_users'), "Birim": "Kullanıcı"},
+                    {"Girdi Parametresi": t["acs_face"], "Değer": inputs.get('acs_face_rec_qty'), "Birim": "Adet"},
+                    {"Girdi Parametresi": t["acs_finger"], "Değer": inputs.get('acs_fingerprint_qty'), "Birim": "Adet"}
                 ])
 
-                calculated_results['ACS'] = pd.DataFrame([
-                    {"Bileşen / Metrik": "Kontrollü Kapı Sayısı (Tek + Çift)", "Miktar": total_doors, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Turnikeler", "Miktar": inputs['acs_turnstiles'], "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Kart Okuyucular", "Miktar": readers, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Yüz Tanıma Terminalleri", "Miktar": inputs['acs_face_rec_qty'], "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Parmak İzi Okuyucular", "Miktar": inputs['acs_fingerprint_qty'], "Birim": "Adet"},
-                    {"Bileşen / Metrik": "4-Kapılı Geçiş Kontrol Paneli", "Miktar": controllers, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Tanımlı Kullanıcı Kapasitesi", "Miktar": inputs['acs_users'], "Birim": "Kullanıcı"}
-                ])
+                items_data = [
+                    ("Kontrollü Kapı Sayısı (Tek + Çift)", total_doors, "Adet"),
+                    ("Turnikeler", inputs.get('acs_turnstiles', 16), "Adet"),
+                    ("Kart Okuyucular", readers, "Adet"),
+                    ("Yüz Tanıma Terminalleri", inputs.get('acs_face_rec_qty', 10), "Adet"),
+                    ("Parmak İzi Okuyucular", inputs.get('acs_fingerprint_qty', 15), "Adet"),
+                    ("4-Kapılı Geçiş Kontrol Paneli", controllers, "Adet"),
+                    ("Tanımlı Kullanıcı Kapasitesi", inputs.get('acs_users', 3000), "Kullanıcı")
+                ]
+
+                calculated_results['ACS'] = create_output_df(items_data, red_pct, t)
 
             # 3. FAS HESAPLAMA
             elif t["system_names"]["FAS"] in sys:
-                sqm = inputs['fas_sqm']
+                red_pct = inputs.get('fas_redundancy', 0)
+                sqm = inputs.get('fas_sqm', 75000)
                 base_detectors = math.ceil(sqm / 60)
-                if inputs['fas_raised_floor']:
+                if inputs.get('fas_raised_floor', True):
                     base_detectors = math.ceil(base_detectors * 1.5)
 
                 manual_call_points = math.ceil(sqm / 500)
@@ -586,122 +650,80 @@ else:
                 panels = math.ceil(loops / 8)
 
                 inputs_summary['FAS'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["fas_sqm"], "Değer": inputs['fas_sqm'], "Birim": "m²"},
-                    {"Girdi Parametresi": t["fas_rf"], "Değer": "Evet" if inputs['fas_raised_floor'] else "Hayır", "Birim": "-"},
-                    {"Girdi Parametresi": t["fas_beam"], "Değer": inputs['fas_beam_detectors'], "Birim": "Çift"}
+                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"},
+                    {"Girdi Parametresi": t["fas_sqm"], "Değer": inputs.get('fas_sqm'), "Birim": "m²"},
+                    {"Girdi Parametresi": t["fas_rf"], "Değer": "Evet" if inputs.get('fas_raised_floor') else "Hayır", "Birim": "-"},
+                    {"Girdi Parametresi": t["fas_beam"], "Değer": inputs.get('fas_beam_detectors'), "Birim": "Çift"}
                 ])
 
-                calculated_results['FAS'] = pd.DataFrame([
-                    {"Bileşen / Metrik": "Duman / Sıcaklık Dedektörleri", "Miktar": base_detectors, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Işın (Beam) Dedektör Çifti", "Miktar": inputs['fas_beam_detectors'], "Birim": "Çift"},
-                    {"Bileşen / Metrik": "Yangın İhbar Butonları", "Miktar": manual_call_points, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Flaşörlü Sirenler", "Miktar": sounders_flashing, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Toplam Çevrim (Loop) Sayısı", "Miktar": loops, "Birim": "Loop"},
-                    {"Bileşen / Metrik": "Yangın Kontrol Paneli (8-Loop)", "Miktar": panels, "Birim": "Adet"}
-                ])
+                items_data = [
+                    ("Duman / Sıcaklık Dedektörleri", base_detectors, "Adet"),
+                    ("Işın (Beam) Dedektör Çifti", inputs.get('fas_beam_detectors', 6), "Çift"),
+                    ("Yangın İhbar Butonları", manual_call_points, "Adet"),
+                    ("Flaşörlü Sirenler", sounders_flashing, "Adet"),
+                    ("Toplam Çevrim (Loop) Sayısı", loops, "Loop"),
+                    ("Yangın Kontrol Paneli (8-Loop)", panels, "Adet")
+                ]
+
+                calculated_results['FAS'] = create_output_df(items_data, red_pct, t)
 
             # 4. PA/VA HESAPLAMA
             elif t["system_names"]["PA/VA"] in sys:
-                sqm = inputs['pava_sqm']
+                red_pct = inputs.get('pava_redundancy', 0)
+                sqm = inputs.get('pava_sqm', 75000)
                 speakers = math.ceil(sqm / 50)
-                watts_per_spk = 6 if inputs['pava_environment'] == t["pava_env_noisy"] else 3
+                watts_per_spk = 6 if inputs.get('pava_environment') == t["pava_env_noisy"] else 3
                 total_power_watts = math.ceil(speakers * watts_per_spk * 1.25)
                 amplifiers = math.ceil(total_power_watts / 1000)
 
                 inputs_summary['PA/VA'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["pava_sqm"], "Değer": inputs['pava_sqm'], "Birim": "m²"},
-                    {"Girdi Parametresi": t["pava_zones"], "Değer": inputs['pava_zones'], "Birim": "Zone"},
-                    {"Girdi Parametresi": t["pava_env"], "Değer": inputs['pava_environment'], "Birim": "-"}
+                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"},
+                    {"Girdi Parametresi": t["pava_sqm"], "Değer": inputs.get('pava_sqm'), "Birim": "m²"},
+                    {"Girdi Parametresi": t["pava_zones"], "Değer": inputs.get('pava_zones'), "Birim": "Zone"},
+                    {"Girdi Parametresi": t["pava_env"], "Değer": inputs.get('pava_environment'), "Birim": "-"}
                 ])
 
-                calculated_results['PA/VA'] = pd.DataFrame([
-                    {"Bileşen / Metrik": "Tavan / Duvar Tipi Hoparlörler", "Miktar": speakers, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Tahmini Güç İhtiyacı", "Miktar": total_power_watts, "Birim": "Watt"},
-                    {"Bileşen / Metrik": "Sistem Anons Bölgesi (Zone)", "Miktar": inputs['pava_zones'], "Birim": "Zone"},
-                    {"Bileşen / Metrik": "1000W Güç Anfisi İhtiyacı", "Miktar": amplifiers, "Birim": "Adet"},
-                    {"Bileşen / Metrik": "Acil Anons Mikrofon İstasyonu", "Miktar": 2, "Birim": "Adet"}
-                ])
+                items_data = [
+                    ("Hoparlör İhtiyacı (Tavan/Duvar)", speakers, "Adet"),
+                    ("Tahmini Güç İhtiyacı", total_power_watts, "Watt"),
+                    ("1000W Güç Anfisi İhtiyacı", amplifiers, "Adet"),
+                    ("Anons Bölgesi (Zone) Sayısı", inputs.get('pava_zones', 16), "Zone")
+                ]
 
-        st.session_state['results'] = calculated_results
-        st.session_state['inputs_summary'] = inputs_summary
-        st.session_state['project_name'] = project_name
-        st.session_state['country'] = selected_country
-        st.session_state['city'] = selected_city
-        st.session_state['selected_systems'] = selected_systems
-        st.session_state['report_datetime'] = now_str
+                calculated_results['PA/VA'] = create_output_df(items_data, red_pct, t)
 
-    # --- EKRANA BASMA VE İNDİRME BUTONLARI ---
-    if 'results' in st.session_state and st.session_state['results']:
-        st.success(t["report_success"].format(project=st.session_state['project_name']))
-        st.caption(f"📍 **{t['location_label']}:** {st.session_state['country']} / {st.session_state['city']} | 📅 **{t['report_date_label']}:** {st.session_state['report_datetime']}")
+        # --- EKRANDA SONUÇLARI GÖSTERME ---
+        st.success(t["report_success"].format(project=project_name))
 
-        res_tabs = st.tabs([f"📊 {s}" for s in st.session_state['selected_systems']])
-
-        for idx, sys_name in enumerate(st.session_state['selected_systems']):
+        res_tabs = st.tabs(list(calculated_results.keys()))
+        for idx, sys_key in enumerate(calculated_results.keys()):
             with res_tabs[idx]:
-                key_code = "CCTV" if "CCTV" in sys_name else ("ACS" if "ACS" in sys_name else ("FAS" if "FAS" in sys_name else "PA/VA"))
-                
-                # GİRDİLER TABLOSU
-                if 'inputs_summary' in st.session_state and key_code in st.session_state['inputs_summary']:
+                col_in, col_out = st.columns([1, 1.5])
+                with col_in:
                     st.markdown(f"#### {t['inputs_header']}")
-                    st.dataframe(st.session_state['inputs_summary'][key_code], use_container_width=True, hide_index=True)
-                    st.markdown("<br>", unsafe_allow_html=True)
-
-                # ÇIKTILAR TABLOSU
-                if key_code in st.session_state['results']:
+                    st.dataframe(inputs_summary[sys_key], use_container_width=True, hide_index=True)
+                with col_out:
                     st.markdown(f"#### {t['outputs_header']}")
-                    df_out = st.session_state['results'][key_code]
-                    st.dataframe(df_out, use_container_width=True, hide_index=True)
+                    st.dataframe(calculated_results[sys_key], use_container_width=True, hide_index=True)
 
         st.markdown("---")
         st.subheader(t["download_section"])
 
-        # EXCEL OLUŞTURMA
-        excel_buffer = io.BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-            info_df = pd.DataFrame([
-                {"Parametre": t["project_name_label"], "Değer": st.session_state['project_name']},
-                {"Parametre": t["location_label"], "Değer": f"{st.session_state['country']} / {st.session_state['city']}"},
-                {"Parametre": t["report_date_label"], "Değer": st.session_state['report_datetime']}
-            ])
-            info_df.to_excel(writer, sheet_name="Genel Bilgi", index=False)
-
-            for sys_key, df_res in st.session_state['results'].items():
-                start_row = 0
-                if sys_key in st.session_state['inputs_summary']:
-                    st.session_state['inputs_summary'][sys_key].to_excel(writer, sheet_name=sys_key, startrow=0, index=False)
-                    start_row = len(st.session_state['inputs_summary'][sys_key]) + 3
-                
-                df_res.to_excel(writer, sheet_name=sys_key, startrow=start_row, index=False)
-
-        excel_data = excel_buffer.getvalue()
-
-        # PDF OLUŞTURMA
-        pdf_data = generate_pdf(
-            st.session_state['project_name'], 
-            st.session_state['country'],
-            st.session_state['city'],
-            st.session_state['results'], 
-            st.session_state['inputs_summary'],
-            st.session_state['report_datetime'],
-            t
+        pdf_bytes = generate_pdf(
+            project_name=project_name,
+            country=selected_country,
+            city=selected_city,
+            results=calculated_results,
+            inputs_summary=inputs_summary,
+            report_datetime_str=now_str,
+            t_labels=t
         )
 
-        col_dl1, col_dl2 = st.columns(2)
-        with col_dl1:
-            st.download_button(
-                label="📊 Excel Raporu İndir (.xlsx)",
-                data=excel_data,
-                file_name=f"{st.session_state['project_name']}_Zayif_Akim_Raporu.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-
-        with col_dl2:
-            st.download_button(
-                label="📄 PDF Raporu İndir (.pdf)",
-                data=pdf_data,
-                file_name=f"{st.session_state['project_name']}_Zayif_Akim_Raporu.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
+        st.download_button(
+            label=t["download_pdf_btn"],
+            data=pdf_bytes,
+            file_name=f"{project_name}_Zayif_Akim_Raporu.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            type="primary"
+        )
