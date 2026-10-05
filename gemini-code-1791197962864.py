@@ -51,11 +51,9 @@ if not selected_systems:
     st.warning("⚠️ Lütfen devam etmek için en az bir zayıf akım sistemi seçiniz.")
 else:
     with st.form("main_system_form"):
-        # Seçilen sistemlerin sorularını ayrı sekmelerde göster
         system_tabs = st.tabs(selected_systems)
         
         # Soru Değişkenleri Tanımları
-        # CCTV
         cctv_airport_type = "Uluslararası Transit Hub (Yüksek Güvenlik / Yoğun Yolcu)"
         cctv_sqm = 75000
         cctv_checkpoints = 20
@@ -69,18 +67,15 @@ else:
         cctv_storage_days = 60
         cctv_resolution = "4MP (Önerilen / Optimal)"
 
-        # ACS
         acs_doors = 100
         acs_turnstiles = 12
         acs_users = 2500
         acs_biometric = False
 
-        # FAS
         fas_sqm = 75000
         fas_raised_floor = True
         fas_beam_detectors = 4
 
-        # PA/VA
         pava_zones = 16
         pava_sqm = 75000
         pava_environment = "Standart Terminal Alanı (70-75 dB)"
@@ -157,12 +152,12 @@ else:
     if submit_button:
         st.success(f"✅ **{project_name}** İçin Seçilen Sistem Planlama Raporu Başarıyla Hesaplandı!")
         
+        now_str = datetime.now().strftime("%d.%m.%Y %H:%M")
         excel_rows = [
             {"Sistem": "GENEL BİLGİ", "Bileşen / Tanım": "Proje Adı", "Değer / Miktar": project_name, "Birim": "-"},
-            {"Sistem": "GENEL BİLGİ", "Bileşen / Tanım": "Oluşturulma Tarihi", "Değer / Miktar": datetime.now().strftime('%d.%m.%Y %H:%M'), "Birim": "-"}
+            {"Sistem": "GENEL BİLGİ", "Bileşen / Tanım": "Oluşturulma Tarihi", "Değer / Miktar": now_str, "Birim": "-"}
         ]
 
-        # DETAY SEKMELERİ
         res_tabs = st.tabs([f"📊 {s}" for s in selected_systems])
 
         for idx, sys in enumerate(selected_systems):
@@ -214,8 +209,8 @@ else:
 
                 # --- 2. ACS HESAPLAR ---
                 elif "ACS" in sys:
-                    readers = acs_doors * 2  # Giriş-Çıkış Çift Okuyucu
-                    door_controllers = math.ceil(acs_doors / 4) # 4 Kapılı Kontrolcü
+                    readers = acs_doors * 2
+                    door_controllers = math.ceil(acs_doors / 4)
                     turnstile_readers = acs_turnstiles * 2
                     biometric_readers = math.ceil(acs_doors * 0.15) if acs_biometric else 0
 
@@ -243,79 +238,4 @@ else:
                 elif "FAS" in sys:
                     sqm_per_detector = 50 if fas_raised_floor else 70
                     detectors = math.ceil(fas_sqm / sqm_per_detector)
-                    manual_call_points = math.ceil(fas_sqm / 500) # Her 500m2'ye 1 buton
-                    sirens = math.ceil(fas_sqm / 400) # Her 400m2'ye 1 flaşörlü siren
-                    loops = math.ceil(detectors / 200) # Loop başına 200 eleman
-                    panels = math.ceil(loops / 8) # 8 Looplu Santral
-
-                    col_f1, col_f2, col_f3 = st.columns(3)
-                    col_f1.metric("Optik Duman/Sıcaklık Dedektörü", f"{detectors:,} Adet")
-                    col_f2.metric("Yangın İhbar Butonu & Siren", f"{manual_call_points + sirens:,} Adet")
-                    col_f3.metric("8-Loop Yangın Santrali", f"{panels} Adet")
-
-                    st.table({
-                        "Ekipman Tanımı": ["Adresli Optik Duman Dedektörü", "Yangın İhbar Butonu", "Flaşörlü Siren / Flaşör", "Işın (Beam) Dedektörü", "8-Loop Yangın Algılama Santrali"],
-                        "Miktar": [detectors, manual_call_points, sirens, fas_beam_detectors, panels],
-                        "Birim": ["Adet", "Adet", "Adet", "Çift", "Adet"]
-                    })
-
-                    excel_rows.extend([
-                        {"Sistem": "FAS", "Bileşen / Tanım": "Adresli Optik Duman Dedektörü", "Değer / Miktar": detectors, "Birim": "Adet"},
-                        {"Sistem": "FAS", "Bileşen / Tanım": "Yangın İhbar Butonu", "Değer / Miktar": manual_call_points, "Birim": "Adet"},
-                        {"Sistem": "FAS", "Bileşen / Tanım": "Flaşörlü Siren", "Değer / Miktar": sirens, "Birim": "Adet"},
-                        {"Sistem": "FAS", "Bileşen / Tanım": "Işın (Beam) Dedektörü", "Değer / Miktar": fas_beam_detectors, "Birim": "Çift"},
-                        {"Sistem": "FAS", "Bileşen / Tanım": "8-Loop Yangın Santrali", "Değer / Miktar": panels, "Birim": "Adet"},
-                    ])
-
-                # --- 4. PA/VA HESAPLAR ---
-                elif "PA/VA" in sys:
-                    spk_sqm = 50 if "Gürültülü" in pava_environment else 80
-                    ceiling_speakers = math.ceil(pava_sqm / spk_sqm)
-                    horn_speakers = math.ceil(pava_sqm / 300) if "Gürültülü" in pava_environment else 0
-                    total_watt = (ceiling_speakers * 6) + (horn_speakers * 15)
-                    amplifiers = math.ceil(total_watt / 500) # 500W Amplifikatör
-
-                    col_p1, col_p2, col_p3 = st.columns(3)
-                    col_p1.metric("Tavan Hoparlörü", f"{ceiling_speakers:,} Adet")
-                    col_p2.metric("Toplam Güç İhtiyacı", f"{total_watt:,} Watt")
-                    col_p3.metric("500W Amplifikatör Ünitesi", f"{amplifiers} Adet")
-
-                    st.table({
-                        "Ekipman Tanımı": ["Tavan Tipi Anons Hoparlörü (6W)", "Korna/Horn Hoparlör (15W)", "Sistem Bölge (Zone) Sayısı", "500W Güç Amplifikatörü", "Anons Mikrofon İstasyonu"],
-                        "Miktar": [ceiling_speakers, horn_speakers, pava_zones, amplifiers, math.ceil(pava_zones / 4)],
-                        "Birim": ["Adet", "Adet", "Zone", "Adet", "Adet"]
-                    })
-
-                    excel_rows.extend([
-                        {"Sistem": "PA/VA", "Bileşen / Tanım": "Tavan Hoparlörü (6W)", "Değer / Miktar": ceiling_speakers, "Birim": "Adet"},
-                        {"Sistem": "PA/VA", "Bileşen / Tanım": "Korna Hoparlör (15W)", "Değer / Miktar": horn_speakers, "Birim": "Adet"},
-                        {"Sistem": "PA/VA", "Bileşen / Tanım": "Anons Bölgesi (Zone)", "Değer / Miktar": pava_zones, "Birim": "Zone"},
-                        {"Sistem": "PA/VA", "Bileşen / Tanım": "Anons Amplifikatörü (500W)", "Değer / Miktar": amplifiers, "Birim": "Adet"},
-                    ])
-
-        # --- EXCEL RAPORU İNDİRME ---
-        st.markdown("---")
-        st.subheader("📥 Bütünleşik Zayıf Akım Excel Raporu")
-
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df = pd.DataFrame(excel_rows)
-            df.to_excel(writer, index=False, sheet_name='Zayif_Akim_Tasarim_Raporu', startrow=4)
-            
-            workbook = writer.book
-            worksheet = writer.sheets['Zayif_Akim_Tasarim_Raporu']
-
-            header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
-            font_title = Font(name="Calibri", size=16, bold=True, color="1F4E78")
-            font_subtitle = Font(name="Calibri", size=10, italic=True, color="595959")
-            font_header = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-            font_data = Font(name="Calibri", size=11)
-
-            thin_border = Border(
-                left=Side(style='thin', color='D9D9D9'), right=Side(style='thin', color='D9D9D9'),
-                top=Side(style='thin', color='D9D9D9'), bottom=Side(style='thin', color='D9D9D9')
-            )
-
-            worksheet['A1'] = "ZAYIF AKIM SİSTEMLERİ ÖN TASARIM VE İHTİYAÇ RAPORU"
-            worksheet['A1'].font = font_title
-            worksheet['A2'] = f"Proje: {project_name} | Tarih: {datetime.now
+                    manual_call_
