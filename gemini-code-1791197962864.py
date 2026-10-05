@@ -20,7 +20,7 @@ st.markdown(hide_st_style, unsafe_allow_html=True)
 
 # --- ŞİRKET LOGOSU VE BAŞLIK ---
 # Aşağıdaki tırnak içine kendi logonuzun internet linkini yapıştırabilirsiniz.
-logo_url = "https://via.placeholder.com/200x60.png?text=SIRKET+LOGOSU" 
+logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg" 
 
 col_logo, col_title = st.columns([1, 4])
 with col_logo:
