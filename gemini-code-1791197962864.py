@@ -53,7 +53,7 @@ else:
     with st.form("main_system_form"):
         system_tabs = st.tabs(selected_systems)
         
-        # Soru Değişkenleri Tanımları
+        # Form içi değişken tanımları
         cctv_airport_type = "Uluslararası Transit Hub (Yüksek Güvenlik / Yoğun Yolcu)"
         cctv_sqm = 75000
         cctv_checkpoints = 20
@@ -84,7 +84,6 @@ else:
 
         for i, sys in enumerate(selected_systems):
             with system_tabs[i]:
-                # --- 1. CCTV SİSTEMİ ---
                 if "CCTV" in sys:
                     st.markdown("### 🎥 CCTV Kamera Güvenlik Sistemi")
                     cctv_airport_type = st.radio(
@@ -116,7 +115,6 @@ else:
                         cctv_storage_days = st.selectbox("Kayıt Saklama Süresi (Gün)", [30, 60, 90, 180], index=1, key="c_days")
                         cctv_resolution = st.selectbox("Kamera Kalite Standardı", ["4MP (Önerilen / Optimal)", "2MP (Full HD - Standart)", "8MP (4K - Yüksek Detay)"], key="c_res")
 
-                # --- 2. ACS SİSTEMİ ---
                 elif "ACS" in sys:
                     st.markdown("### 🚪 Kartlı Geçiş ve Turnike Sistemi (ACS)")
                     ac1, ac2 = st.columns(2)
@@ -131,7 +129,6 @@ else:
                         acs_face_rec_qty = st.number_input("Yüz Tanıma Terminali Adedi", min_value=0, value=10, step=1, key="a_face_qty")
                         acs_fingerprint_qty = st.number_input("Parmak İzi Okuyucu Adedi", min_value=0, value=15, step=1, key="a_finger_qty")
 
-                # --- 3. FAS SİSTEMİ ---
                 elif "FAS" in sys:
                     st.markdown("### 🚨 Yangın Algılama ve İhbar Sistemi (FAS)")
                     fc1, fc2 = st.columns(2)
@@ -141,7 +138,6 @@ else:
                     with fc2:
                         fas_beam_detectors = st.number_input("Yüksek Tavan / Hangar İçin Işın (Beam) Dedektör Çifti Sayısı", min_value=0, value=6, key="f_beam")
 
-                # --- 4. PA/VA SİSTEMİ ---
                 elif "PA/VA" in sys:
                     st.markdown("### 📢 Acil Anons ve Seslendirme Sistemi (PA/VA)")
                     pc1, pc2 = st.columns(2)
@@ -169,11 +165,141 @@ else:
         for idx, sys in enumerate(selected_systems):
             with res_tabs[idx]:
                 
-                # --- 1. CCTV HESAPLAR ---
                 if "CCTV" in sys:
                     sqm_per_cam = 60 if "Uluslararası" in cctv_airport_type else 90
                     fence_m_per_cam = 40 if "Uluslararası" in cctv_airport_type else 60
                     cam_per_check = 3 if "Uluslararası" in cctv_airport_type else 2
 
                     terminal_cams = math.ceil(cctv_sqm / sqm_per_cam)
-                    checkpoint_cams = cctv_checkpoints * cam_
+                    checkpoint_cams = cctv_checkpoints * cam_per_check
+                    fence_cams = math.ceil(cctv_fence_m / fence_m_per_cam)
+                    anpr_cams = (cctv_lanes * 2) if cctv_use_anpr else 0
+
+                    fence_thermal = math.ceil(fence_cams * 0.15)
+                    fence_fixed = fence_cams - fence_thermal
+                    total_cams = terminal_cams + checkpoint_cams + fence_cams + anpr_cams
+
+                    tb_per_cam_day = 0.02 if "4MP" in cctv_resolution else (0.015 if "2MP" in cctv_resolution else 0.035)
+                    total_storage_tb = math.ceil(total_cams * tb_per_cam_day * cctv_storage_days)
+                    recording_servers = math.ceil(total_cams / 64)
+                    failover_servers = math.ceil(recording_servers / 8)
+                    video_wall_monitors = cctv_operators * 2 + (cctv_control_rooms * 2)
+
+                    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+                    col_m1.metric("Toplam CCTV Kamera", f"{total_cams:,} Adet")
+                    col_m2.metric("Net Depolama", f"{total_storage_tb:,} TB")
+                    col_m3.metric("Kayıt Sunucusu (64Ch)", f"{recording_servers + failover_servers} Adet")
+                    col_m4.metric("Video Wall (55\")", f"{video_wall_monitors} Adet")
+
+                    st.dataframe(pd.DataFrame({
+                        "Ekipman Tanımı": ["Terminal İçi Sabit Kamera", "Pasaport/Güvenlik (FR) Kamera", "Çevre Çit Sabit Kamera", "Çevre Çit Termal/PTZ", "ANPR Plaka Kamera", "64Ch Kayıt Sunucusu", "Video Wall Monitör"],
+                        "Miktar": [terminal_cams, checkpoint_cams, fence_fixed, fence_thermal, anpr_cams, recording_servers + failover_servers, video_wall_monitors],
+                        "Birim": ["Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet"]
+                    }), use_container_width=True)
+
+                    excel_rows.extend([
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Terminal Sabit Kamera", "Değer / Miktar": terminal_cams, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Pasaport/FR Kamera", "Değer / Miktar": checkpoint_cams, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Çevre Çit Sabit Kamera", "Değer / Miktar": fence_fixed, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Çevre Çit Termal/PTZ", "Değer / Miktar": fence_thermal, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "ANPR Plaka Kamera", "Değer / Miktar": anpr_cams, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "TOPLAM KAMERA", "Değer / Miktar": total_cams, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Net Depolama Alanı", "Değer / Miktar": total_storage_tb, "Birim": "TB"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Kayıt Sunucuları (N+1)", "Değer / Miktar": recording_servers + failover_servers, "Birim": "Adet"},
+                    ])
+
+                elif "ACS" in sys:
+                    total_doors = acs_single_doors + acs_double_doors
+                    total_biometric = acs_face_rec_qty + acs_fingerprint_qty
+
+                    biometric_doors = min(total_biometric, total_doors)
+                    standard_doors = total_doors - biometric_doors
+
+                    card_readers = standard_doors * 2
+                    exit_buttons = biometric_doors
+                    door_controllers = math.ceil(total_doors / 4)
+                    turnstile_readers = acs_turnstiles * 2
+                    
+                    locks = (acs_single_doors * 1) + (acs_double_doors * 2)
+                    magnetic_contacts = (acs_single_doors * 1) + (acs_double_doors * 2)
+
+                    col_a1, col_a2, col_a3, col_a4 = st.columns(4)
+                    col_a1.metric("Toplam Kontrollü Kapı", f"{total_doors} Adet")
+                    col_a2.metric("RFID Okuyucu", f"{card_readers} Adet")
+                    col_a3.metric("Biyometrik Terminal", f"{total_biometric} Adet")
+                    col_a4.metric("Çıkış Butonu", f"{exit_buttons} Adet")
+
+                    st.dataframe(pd.DataFrame({
+                        "Ekipman / Modül Tanımı": [
+                            "Tek Kanat Kontrollü Kapı",
+                            "Çift Kanat Kontrollü Kapı",
+                            "Kapı Kart Okuyucu (RFID)",
+                            "Yüz Tanıma Terminali",
+                            "Parmak İzi Okuyucu",
+                            "Kapı Çıkış Butonu (Biyometrik Kapılar İçin)",
+                            "Turnike Kart Okuyucu",
+                            "4 Kapılı Kapı Kontrol Paneli",
+                            "Manyetik Kontak (MC)",
+                            "Elektromanyetik Kilit / Kilit Karşılığı",
+                            "Proximity Kullanıcı Kartı (+%20 Yedek)"
+                        ],
+                        "Miktar": [
+                            acs_single_doors,
+                            acs_double_doors,
+                            card_readers,
+                            acs_face_rec_qty,
+                            acs_fingerprint_qty,
+                            exit_buttons,
+                            turnstile_readers,
+                            door_controllers,
+                            magnetic_contacts,
+                            locks,
+                            math.ceil(acs_users * 1.2)
+                        ],
+                        "Birim": ["Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet"]
+                    }), use_container_width=True)
+
+                    excel_rows.extend([
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Tek Kanat Kontrollü Kapı Sayısı", "Değer / Miktar": acs_single_doors, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Çift Kanat Kontrollü Kapı Sayısı", "Değer / Miktar": acs_double_doors, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Toplam Kapı Sayısı", "Değer / Miktar": total_doors, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Kapı Kart Okuyucu (RFID)", "Değer / Miktar": card_readers, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Yüz Tanıma Terminali", "Değer / Miktar": acs_face_rec_qty, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Parmak İzi Okuyucu", "Değer / Miktar": acs_fingerprint_qty, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Çıkış Butonu (Biyometrik Kapılar)", "Değer / Miktar": exit_buttons, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Turnike Kart Okuyucu", "Değer / Miktar": turnstile_readers, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "4-Kapı Kontrol Paneli", "Değer / Miktar": door_controllers, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Manyetik Kontak (MC)", "Değer / Miktar": magnetic_contacts, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Elektromanyetik Kilit", "Değer / Miktar": locks, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Basılacak Kart Miktarı", "Değer / Miktar": math.ceil(acs_users * 1.2), "Birim": "Adet"},
+                    ])
+
+                elif "FAS" in sys:
+                    sqm_per_detector = 50 if fas_raised_floor else 70
+                    detectors = math.ceil(fas_sqm / sqm_per_detector)
+                    manual_call_points = math.ceil(fas_sqm / 500)
+                    sirens = math.ceil(fas_sqm / 400)
+                    loops = math.ceil(detectors / 200)
+                    panels = math.ceil(loops / 8)
+
+                    col_f1, col_f2, col_f3 = st.columns(3)
+                    col_f1.metric("Optik Duman/Sıcaklık Dedektörü", f"{detectors:,} Adet")
+                    col_f2.metric("Yangın İhbar Butonu & Siren", f"{manual_call_points + sirens:,} Adet")
+                    col_f3.metric("8-Loop Yangın Santrali", f"{panels} Adet")
+
+                    st.dataframe(pd.DataFrame({
+                        "Ekipman Tanımı": ["Adresli Optik Duman Dedektörü", "Yangın İhbar Butonu", "Flaşörlü Siren / Flaşör", "Işın (Beam) Dedektörü", "8-Loop Yangın Algılama Santrali"],
+                        "Miktar": [detectors, manual_call_points, sirens, fas_beam_detectors, panels],
+                        "Birim": ["Adet", "Adet", "Adet", "Çift", "Adet"]
+                    }), use_container_width=True)
+
+                    excel_rows.extend([
+                        {"Sistem": "FAS", "Bileşen / Tanım": "Adresli Optik Duman Dedektörü", "Değer / Miktar": detectors, "Birim": "Adet"},
+                        {"Sistem": "FAS", "Bileşen / Tanım": "Yangın İhbar Butonu", "Değer / Miktar": manual_call_points, "Birim": "Adet"},
+                        {"Sistem": "FAS", "Bileşen / Tanım": "Flaşörlü Siren", "Değer / Miktar": sirens, "Birim": "Adet"},
+                        {"Sistem": "FAS", "Bileşen / Tanım": "Işın (Beam) Dedektörü", "Değer / Miktar": fas_beam_detectors, "Birim": "Çift"},
+                        {"Sistem": "FAS", "Bileşen / Tanım": "8-Loop Yangın Santrali", "Değer / Miktar": panels, "Birim": "Adet"},
+                    ])
+
+                elif "PA/VA" in sys:
+                    spk_sqm = 50 if "Gürültülü" in pava_environment else 8
