@@ -49,6 +49,8 @@ TEXTS = {
         "report_success": "✅ **{project}** İçin Seçilen Sistem Planlama Raporu Başarıyla Hesaplandı!",
         "download_section": "📥 Rapor Çıktısı Alın",
         "report_date_label": "Rapor Tarihi",
+        "inputs_header": "📋 Girdi Parametreleri (Tasarım Kriterleri)",
+        "outputs_header": "📊 Hesaplanan İhtiyaçlar (Sistem Çıktıları)",
         "cctv_title": "🎥 CCTV Kamera Güvenlik Sistemi",
         "cctv_scope": "Havalimanı Kapsamı:",
         "cctv_opt1": "Uluslararası Transit Hub (Yüksek Güvenlik / Yoğun Yolcu)",
@@ -105,6 +107,8 @@ TEXTS = {
         "report_success": "✅ Planning report successfully generated for **{project}**!",
         "download_section": "📥 Download Report",
         "report_date_label": "Report Date",
+        "inputs_header": "📋 Input Parameters (Design Criteria)",
+        "outputs_header": "📊 Calculated Requirements (System Outputs)",
         "cctv_title": "🎥 CCTV Surveillance System",
         "cctv_scope": "Airport Scope:",
         "cctv_opt1": "International Transit Hub (High Security / High Traffic)",
@@ -161,6 +165,8 @@ TEXTS = {
         "report_success": "✅ **{project}** жобасы үшін жоспарлау есебі сәтті есептелді!",
         "download_section": "📥 Есепті жүктеп алу",
         "report_date_label": "Есеп күні",
+        "inputs_header": "📋 Енгізілген параметрлер (Жобалау критерийлері)",
+        "outputs_header": "📊 Есептелген қажеттіліктер (Жүйе нәтижелері)",
         "cctv_title": "🎥 CCTV Бейнебақылау жүйесі",
         "cctv_scope": "Әуежай ауқымы:",
         "cctv_opt1": "Халықаралық транзиттік хаб (Жоғары қауіпсіздік / Қарқынды)",
@@ -208,7 +214,7 @@ TEXTS = {
 }
 
 # --- PDF OLUŞTURMA FONKSİYONU ---
-def generate_pdf(project_name, results, report_datetime_str, date_label):
+def generate_pdf(project_name, results, inputs_summary, report_datetime_str, t_labels):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
     story = []
@@ -255,6 +261,16 @@ def generate_pdf(project_name, results, report_datetime_str, date_label):
         spaceBefore=12,
         spaceAfter=6
     )
+    section_style = ParagraphStyle(
+        'SectionStyle',
+        parent=styles['Heading3'],
+        fontName=font_bold_name,
+        fontSize=10,
+        leading=13,
+        textColor=colors.HexColor("#2D3748"),
+        spaceBefore=8,
+        spaceAfter=4
+    )
     normal_style = ParagraphStyle(
         'NormalTR',
         parent=styles['Normal'],
@@ -265,20 +281,46 @@ def generate_pdf(project_name, results, report_datetime_str, date_label):
 
     story.append(Paragraph(safe_str("Zayıf Akım Sistem Planlama Raporu"), title_style))
     story.append(Paragraph(safe_str(f"<b>Proje Adı:</b> {project_name}"), normal_style))
-    story.append(Paragraph(safe_str(f"<b>{date_label}:</b> {report_datetime_str}"), normal_style))
+    story.append(Paragraph(safe_str(f"<b>{t_labels['report_date_label']}:</b> {report_datetime_str}"), normal_style))
     story.append(Spacer(1, 15))
 
-    for sys_key, df in results.items():
+    for sys_key, df_out in results.items():
         story.append(Paragraph(safe_str(f"<b>{sys_key} Metrikleri</b>"), subtitle_style))
 
-        cleaned_df = df.copy()
-        for col in cleaned_df.columns:
-            cleaned_df[col] = cleaned_df[col].apply(safe_str)
-        cleaned_df.columns = [safe_str(c) for c in cleaned_df.columns]
+        # Girdiler Tablosu
+        if sys_key in inputs_summary:
+            story.append(Paragraph(safe_str(t_labels['inputs_header']), section_style))
+            df_in = inputs_summary[sys_key].copy()
+            for col in df_in.columns:
+                df_in[col] = df_in[col].apply(safe_str)
+            df_in.columns = [safe_str(c) for c in df_in.columns]
 
-        table_data = [cleaned_df.columns.tolist()] + cleaned_df.values.tolist()
-        t = Table(table_data, colWidths=[240, 100, 100])
-        t.setStyle(TableStyle([
+            t_in_data = [df_in.columns.tolist()] + df_in.values.tolist()
+            t_in = Table(t_in_data, colWidths=[240, 100, 100])
+            t_in.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#4A5568")),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), font_bold_name),
+                ('FONTNAME', (0, 1), (-1, -1), font_name),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 4),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor("#EDF2F7")),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E0")),
+            ]))
+            story.append(t_in)
+            story.append(Spacer(1, 8))
+
+        # Çıktılar Tablosu
+        story.append(Paragraph(safe_str(t_labels['outputs_header']), section_style))
+        df_out_clean = df_out.copy()
+        for col in df_out_clean.columns:
+            df_out_clean[col] = df_out_clean[col].apply(safe_str)
+        df_out_clean.columns = [safe_str(c) for c in df_out_clean.columns]
+
+        t_out_data = [df_out_clean.columns.tolist()] + df_out_clean.values.tolist()
+        t_out = Table(t_out_data, colWidths=[240, 100, 100])
+        t_out.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#2B6CB0")),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
@@ -289,7 +331,7 @@ def generate_pdf(project_name, results, report_datetime_str, date_label):
             ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor("#F7FAFC")),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
         ]))
-        story.append(t)
+        story.append(t_out)
         story.append(Spacer(1, 15))
 
     doc.build(story)
@@ -419,8 +461,9 @@ else:
     # --- HESAPLAMA MANTIĞI VE SONUÇLAR ---
     if submit_button:
         calculated_results = {}
-        
-        # Tarayıcı Saat Dilimini Kullanma (Hata Durumunda UTC+3 Türkiye Saatini Esas Alma)
+        inputs_summary = {}
+
+        # Tarayıcı Saat Dilimi
         try:
             if user_timezone_str and isinstance(user_timezone_str, str):
                 user_tz = pytz.timezone(user_timezone_str)
@@ -450,6 +493,18 @@ else:
 
                 poe_switches_24p = math.ceil(total_cams / 20)
 
+                inputs_summary['CCTV'] = pd.DataFrame([
+                    {"Girdi Parametresi": t["cctv_scope"], "Değer": inputs['cctv_airport_type'], "Birim": "-"},
+                    {"Girdi Parametresi": t["cctv_sqm"], "Değer": inputs['cctv_sqm'], "Birim": "m²"},
+                    {"Girdi Parametresi": t["cctv_checkpoints"], "Değer": inputs['cctv_checkpoints'], "Birim": "Nokta"},
+                    {"Girdi Parametresi": t["cctv_fence"], "Değer": inputs['cctv_fence_m'], "Birim": "Metre"},
+                    {"Girdi Parametresi": t["cctv_lanes"], "Değer": inputs['cctv_lanes'], "Birim": "Şerit"},
+                    {"Girdi Parametresi": t["cctv_cr"], "Değer": inputs['cctv_control_rooms'], "Birim": "Adet"},
+                    {"Girdi Parametresi": t["cctv_op"], "Değer": inputs['cctv_operators'], "Birim": "Masa"},
+                    {"Girdi Parametresi": t["cctv_days"], "Değer": inputs['cctv_storage_days'], "Birim": "Gün"},
+                    {"Girdi Parametresi": t["cctv_res"], "Değer": inputs['cctv_resolution'], "Birim": "-"}
+                ])
+
                 calculated_results['CCTV'] = pd.DataFrame([
                     {"Bileşen / Metrik": "İç Mekan Kameraları", "Miktar": indoor_cams, "Birim": "Adet"},
                     {"Bileşen / Metrik": "Çevre Güvenlik Kameraları", "Miktar": fence_cams, "Birim": "Adet"},
@@ -466,6 +521,15 @@ else:
                 total_doors = inputs['acs_single_doors'] + inputs['acs_double_doors']
                 readers = (inputs['acs_single_doors'] * 2) + (inputs['acs_double_doors'] * 2) + (inputs['acs_turnstiles'] * 2)
                 controllers = math.ceil((total_doors + inputs['acs_turnstiles']) / 4)
+
+                inputs_summary['ACS'] = pd.DataFrame([
+                    {"Girdi Parametresi": t["acs_s_doors"], "Değer": inputs['acs_single_doors'], "Birim": "Adet"},
+                    {"Girdi Parametresi": t["acs_d_doors"], "Değer": inputs['acs_double_doors'], "Birim": "Adet"},
+                    {"Girdi Parametresi": t["acs_turnstiles"], "Değer": inputs['acs_turnstiles'], "Birim": "Adet"},
+                    {"Girdi Parametresi": t["acs_users"], "Değer": inputs['acs_users'], "Birim": "Kullanıcı"},
+                    {"Girdi Parametresi": t["acs_face"], "Değer": inputs['acs_face_rec_qty'], "Birim": "Adet"},
+                    {"Girdi Parametresi": t["acs_finger"], "Değer": inputs['acs_fingerprint_qty'], "Birim": "Adet"}
+                ])
 
                 calculated_results['ACS'] = pd.DataFrame([
                     {"Bileşen / Metrik": "Kontrollü Kapı Sayısı (Tek + Çift)", "Miktar": total_doors, "Birim": "Adet"},
@@ -489,6 +553,12 @@ else:
                 loops = math.ceil(base_detectors / 200)
                 panels = math.ceil(loops / 8)
 
+                inputs_summary['FAS'] = pd.DataFrame([
+                    {"Girdi Parametresi": t["fas_sqm"], "Değer": inputs['fas_sqm'], "Birim": "m²"},
+                    {"Girdi Parametresi": t["fas_rf"], "Değer": "Evet" if inputs['fas_raised_floor'] else "Hayır", "Birim": "-"},
+                    {"Girdi Parametresi": t["fas_beam"], "Değer": inputs['fas_beam_detectors'], "Birim": "Çift"}
+                ])
+
                 calculated_results['FAS'] = pd.DataFrame([
                     {"Bileşen / Metrik": "Duman / Sıcaklık Dedektörleri", "Miktar": base_detectors, "Birim": "Adet"},
                     {"Bileşen / Metrik": "Işın (Beam) Dedektör Çifti", "Miktar": inputs['fas_beam_detectors'], "Birim": "Çift"},
@@ -506,6 +576,12 @@ else:
                 total_power_watts = math.ceil(speakers * watts_per_spk * 1.25)
                 amplifiers = math.ceil(total_power_watts / 1000)
 
+                inputs_summary['PA/VA'] = pd.DataFrame([
+                    {"Girdi Parametresi": t["pava_sqm"], "Değer": inputs['pava_sqm'], "Birim": "m²"},
+                    {"Girdi Parametresi": t["pava_zones"], "Değer": inputs['pava_zones'], "Birim": "Zone"},
+                    {"Girdi Parametresi": t["pava_env"], "Değer": inputs['pava_environment'], "Birim": "-"}
+                ])
+
                 calculated_results['PA/VA'] = pd.DataFrame([
                     {"Bileşen / Metrik": "Tavan / Duvar Tipi Hoparlörler", "Miktar": speakers, "Birim": "Adet"},
                     {"Bileşen / Metrik": "Tahmini Güç İhtiyacı", "Miktar": total_power_watts, "Birim": "Watt"},
@@ -515,6 +591,7 @@ else:
                 ])
 
         st.session_state['results'] = calculated_results
+        st.session_state['inputs_summary'] = inputs_summary
         st.session_state['project_name'] = project_name
         st.session_state['selected_systems'] = selected_systems
         st.session_state['report_datetime'] = now_str
@@ -529,9 +606,18 @@ else:
         for idx, sys_name in enumerate(st.session_state['selected_systems']):
             with res_tabs[idx]:
                 key_code = "CCTV" if "CCTV" in sys_name else ("ACS" if "ACS" in sys_name else ("FAS" if "FAS" in sys_name else "PA/VA"))
+                
+                # GİRDİLER TABLOSU
+                if 'inputs_summary' in st.session_state and key_code in st.session_state['inputs_summary']:
+                    st.markdown(f"#### {t['inputs_header']}")
+                    st.dataframe(st.session_state['inputs_summary'][key_code], use_container_width=True, hide_index=True)
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+                # ÇIKTILAR TABLOSU
                 if key_code in st.session_state['results']:
-                    df = st.session_state['results'][key_code]
-                    st.dataframe(df, use_container_width=True, hide_index=True)
+                    st.markdown(f"#### {t['outputs_header']}")
+                    df_out = st.session_state['results'][key_code]
+                    st.dataframe(df_out, use_container_width=True, hide_index=True)
 
         st.markdown("---")
         st.subheader(t["download_section"])
@@ -546,15 +632,22 @@ else:
             info_df.to_excel(writer, sheet_name="Genel Bilgi", index=False)
 
             for sys_key, df_res in st.session_state['results'].items():
-                df_res.to_excel(writer, sheet_name=sys_key, index=False)
+                start_row = 0
+                if sys_key in st.session_state['inputs_summary']:
+                    st.session_state['inputs_summary'][sys_key].to_excel(writer, sheet_name=sys_key, startrow=0, index=False)
+                    start_row = len(st.session_state['inputs_summary'][sys_key]) + 3
+                
+                df_res.to_excel(writer, sheet_name=sys_key, startrow=start_row, index=False)
+
         excel_data = excel_buffer.getvalue()
 
         # PDF OLUŞTURMA
         pdf_data = generate_pdf(
             st.session_state['project_name'], 
             st.session_state['results'], 
+            st.session_state['inputs_summary'],
             st.session_state['report_datetime'],
-            t['report_date_label']
+            t
         )
 
         col_dl1, col_dl2 = st.columns(2)
