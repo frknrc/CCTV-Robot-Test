@@ -17,7 +17,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
-    page_title="Zayıf Akım Sistem Planlama Sihirbazı",
+    page_title="Zayıf Akım Sistem Planlama Botu",
     page_icon="🏢",
     layout="wide"
 )
@@ -53,10 +53,10 @@ LOCATION_DATA = {
 # --- ÇEVİRİ SÖZLÜĞÜ (TR / EN / KK) ---
 TEXTS = {
     "TR": {
-        "page_title": "Zayıf Akım Sistem Planlama Sihirbazı",
+        "page_title": "Zayıf Akım Sistem Planlama Botu",
         "caption": "Lütfen projenize ait verileri girerek donanım ve altyapı ihtiyaç raporunu oluşturun.",
         "project_name_label": "📌 Havalimanı / Proje Adı",
-        "project_name_default": "Örnek Havalimanı Terminal Projesi",
+        "project_name_placeholder": "Proje adını giriniz...",
         "country_label": "🌍 Ülke",
         "city_label": "🏙️ Şehir",
         "select_systems_title": "🎯 Planlanacak Zayıf Akım Sistemlerini Seçiniz",
@@ -121,10 +121,10 @@ TEXTS = {
         }
     },
     "EN": {
-        "page_title": "ELV Systems Planning Wizard",
+        "page_title": "ELV Systems Planning Bot",
         "caption": "Please enter your project details to generate the hardware and infrastructure requirements report.",
         "project_name_label": "📌 Airport / Project Name",
-        "project_name_default": "Sample Airport Terminal Project",
+        "project_name_placeholder": "Enter project name...",
         "country_label": "🌍 Country",
         "city_label": "🏙️ City",
         "select_systems_title": "🎯 Select ELV Systems to Plan",
@@ -189,10 +189,10 @@ TEXTS = {
         }
     },
     "KK": {
-        "page_title": "Әлсіз тоқ жүйелерін жоспарлау шебері",
+        "page_title": "Әлсіз тоқ жүйелерін жоспарлау боты",
         "caption": "Жабдық пен инфрақұрылым талаптарының есебін жасау үшін жоба мәліметтерін енгізіңіз.",
         "project_name_label": "📌 Әуежай / Жоба атауы",
-        "project_name_default": "Әуежай терминалының үлгілік жобасы",
+        "project_name_placeholder": "Жоба атауын енгізіңіз...",
         "country_label": "🌍 Ел",
         "city_label": "🏙️ Қала",
         "select_systems_title": "🎯 Жоспарланатын әлсіз тоқ жүйелерін таңдаңыз",
@@ -324,8 +324,10 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         leading=14
     )
 
+    proj_title = project_name if project_name.strip() else "-"
+
     story.append(Paragraph(safe_str("Zayıf Akım Sistem Planlama Raporu"), title_style))
-    story.append(Paragraph(safe_str(f"<b>Proje Adı:</b> {project_name}"), normal_style))
+    story.append(Paragraph(safe_str(f"<b>Proje Adı:</b> {proj_title}"), normal_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['location_label']}:</b> {country} / {city}"), normal_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['report_date_label']}:</b> {report_datetime_str}"), normal_style))
     story.append(Spacer(1, 12))
@@ -433,7 +435,11 @@ st.caption(t["caption"])
 st.markdown("---")
 
 # --- PROJE BİLGİSİ VE SİSTEM SEÇİMİ ---
-project_name = st.text_input(t["project_name_label"], value=t["project_name_default"])
+project_name = st.text_input(
+    t["project_name_label"],
+    value="",
+    placeholder=t["project_name_placeholder"]
+)
 
 st.subheader(t["select_systems_title"])
 
@@ -447,7 +453,7 @@ sys_options = [
 selected_systems = st.multiselect(
     t["select_systems_label"],
     sys_options,
-    default=[sys_options[0], sys_options[1]]
+    default=[]
 )
 
 st.markdown("---")
@@ -469,7 +475,7 @@ else:
                     key="cctv_type"
                 )
                 
-                # Dengeli 2 Sütunlu Yapı
+                # Hizalı 2 Sütunlu Yapı
                 c1, c2 = st.columns(2)
                 with c1:
                     inputs['cctv_sqm'] = st.number_input(t["cctv_sqm"], min_value=1000, value=75000, step=5000, key="c_sqm")
@@ -563,6 +569,8 @@ else:
             user_tz = pytz.timezone("Europe/Istanbul")
 
         now_str = datetime.now(user_tz).strftime("%d.%m.%Y - %H:%M")
+
+        display_proj_name = project_name.strip() if project_name.strip() else "Proje"
 
         for sys in selected_systems:
             # 1. CCTV HESAPLAMA
@@ -696,7 +704,7 @@ else:
                 calculated_results['PA/VA'] = create_output_df(items_data, red_pct, t)
 
         # --- EKRANDA SONUÇLARI GÖSTERME ---
-        st.success(t["report_success"].format(project=project_name))
+        st.success(t["report_success"].format(project=display_proj_name))
 
         res_tabs = st.tabs(list(calculated_results.keys()))
         for idx, sys_key in enumerate(calculated_results.keys()):
@@ -713,7 +721,7 @@ else:
         st.subheader(t["download_section"])
 
         pdf_bytes = generate_pdf(
-            project_name=project_name,
+            project_name=display_proj_name,
             country=selected_country,
             city=selected_city,
             results=calculated_results,
@@ -722,10 +730,12 @@ else:
             t_labels=t
         )
 
+        pdf_filename = f"{display_proj_name.replace(' ', '_')}_Zayif_Akim_Raporu.pdf"
+
         st.download_button(
             label=t["download_pdf_btn"],
             data=pdf_bytes,
-            file_name=f"{project_name}_Zayif_Akim_Raporu.pdf",
+            file_name=pdf_filename,
             mime="application/pdf",
             use_container_width=True,
             type="primary"
