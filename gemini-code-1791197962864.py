@@ -1,16 +1,27 @@
 import streamlit as st
 import math
 import pandas as pd
+import requests
 from io import BytesIO
 from datetime import datetime
+from PIL import Image
+
+# OpenPyXL (Excel) Kütüphaneleri
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image as OpenPyxlImage
 
-# --- PDF KÜTÜPHANESİ (ReportLab) ---
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
+# ReportLab (PDF) Kütüphaneleri
+HAS_REPORTLAB = True
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+except ModuleNotFoundError:
+    HAS_REPORTLAB = False
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -31,6 +42,20 @@ st.markdown(hide_st_style, unsafe_allow_html=True)
 
 # --- ŞİRKET LOGOSU VE BAŞLIK ---
 logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg" 
+# PDF ve Excel için PNG/JPG formatında doğrudan erişilebilir logo URL'si
+logo_png_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/TAV_Airports_logo.svg/512px-TAV_Airports_logo.svg.png"
+
+@st.cache_data
+def get_logo_bytes(url):
+    try:
+        resp = requests.get(url, timeout=5)
+        if resp.status_code == 200:
+            return resp.content
+    except Exception:
+        pass
+    return None
+
+logo_bytes = get_logo_bytes(logo_png_url)
 
 col_logo, col_title = st.columns([1.5, 3.5])
 with col_logo:
@@ -333,137 +358,4 @@ else:
                         {"Sistem": "PA/VA", "Bileşen / Tanım": "Tavan Hoparlörü (6W)", "Değer / Miktar": ceiling_speakers, "Birim": "Adet"},
                         {"Sistem": "PA/VA", "Bileşen / Tanım": "Korna Hoparlör (15W)", "Değer / Miktar": horn_speakers, "Birim": "Adet"},
                         {"Sistem": "PA/VA", "Bileşen / Tanım": "Anons Bölgesi (Zone)", "Değer / Miktar": pava_zones, "Birim": "Zone"},
-                        {"Sistem": "PA/VA", "Bileşen / Tanım": "Anons Amplifikatörü (500W)", "Değer / Miktar": amplifiers, "Birim": "Adet"},
-                    ])
-
-        # --- RAPOR İNDİRME SEÇENEKLERİ (EXCEL & PDF) ---
-        st.markdown("---")
-        st.subheader("📥 Rapor Çıktısı Alın")
-
-        file_clean_name = project_name.replace(' ', '_')
-
-        col_ex, col_pdf = st.columns(2)
-
-        # 1. EXCEL DOKÜMANI HAZIRLAMA
-        with col_ex:
-            output_excel = BytesIO()
-            with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
-                df = pd.DataFrame(excel_rows)
-                df.to_excel(writer, index=False, sheet_name='Zayif_Akim_Tasarim_Raporu', startrow=4)
-                
-                workbook = writer.book
-                worksheet = writer.sheets['Zayif_Akim_Tasarim_Raporu']
-
-                header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
-                font_title = Font(name="Calibri", size=16, bold=True, color="1F4E78")
-                font_subtitle = Font(name="Calibri", size=10, italic=True, color="595959")
-                font_header = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-                font_data = Font(name="Calibri", size=11)
-
-                thin_border = Border(
-                    left=Side(style='thin', color='D9D9D9'), right=Side(style='thin', color='D9D9D9'),
-                    top=Side(style='thin', color='D9D9D9'), bottom=Side(style='thin', color='D9D9D9')
-                )
-
-                worksheet['A1'] = "ZAYIF AKIM SİSTEMLERİ ÖN TASARIM VE İHTİYAÇ RAPORU"
-                worksheet['A1'].font = font_title
-                worksheet['A2'] = "Proje: " + str(project_name) + " | Tarih: " + str(now_str)
-                worksheet['A2'].font = font_subtitle
-
-                for col_num in range(1, len(df.columns) + 1):
-                    cell = worksheet.cell(row=5, column=col_num)
-                    cell.fill = header_fill
-                    cell.font = font_header
-                    cell.alignment = Alignment(horizontal="center", vertical="center")
-
-                for row_num in range(6, len(df) + 6):
-                    for col_num in range(1, len(df.columns) + 1):
-                        cell = worksheet.cell(row=row_num, column=col_num)
-                        cell.font = font_data
-                        cell.border = thin_border
-                        cell.alignment = Alignment(horizontal="center" if col_num in [3, 4] else "left")
-
-                for col in worksheet.columns:
-                    max_len = max(len(str(cell.value or '')) for cell in col)
-                    col_letter = get_column_letter(col[0].column)
-                    worksheet.column_dimensions[col_letter].width = max(max_len + 5, 12)
-
-            st.download_button(
-                label="📊 Excel (.xlsx) Formatında İndir",
-                data=output_excel.getvalue(),
-                file_name=f"{file_clean_name}_Raporu.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-
-        # 2. PDF DOKÜMANI HAZIRLAMA (ReportLab)
-        with col_pdf:
-            def generate_pdf(rows, proj_title, date_str):
-                pdf_buffer = BytesIO()
-                doc = SimpleDocTemplate(
-                    pdf_buffer,
-                    pagesize=A4,
-                    rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30
-                )
-                elements = []
-                styles = getSampleStyleSheet()
-
-                title_style = ParagraphStyle(
-                    'DocTitle',
-                    parent=styles['Heading1'],
-                    fontSize=16,
-                    leading=20,
-                    textColor=colors.HexColor('#1F4E78'),
-                    spaceAfter=6
-                )
-                subtitle_style = ParagraphStyle(
-                    'DocSubTitle',
-                    parent=styles['Normal'],
-                    fontSize=10,
-                    textColor=colors.HexColor('#595959'),
-                    spaceAfter=15
-                )
-
-                elements.append(Paragraph("ZAYIF AKIM SİSTEMLERİ İHTİYAÇ RAPORU", title_style))
-                elements.append(Paragraph(f"Proje: {proj_title} | Tarih: {date_str}", subtitle_style))
-                elements.append(Spacer(1, 10))
-
-                # Tablo Verisi Hazırlığı
-                table_data = [["Sistem", "Bilesen / Tanim", "Miktar", "Birim"]]
-                for row in rows:
-                    table_data.append([
-                        str(row["Sistem"]),
-                        str(row["Bileşen / Tanım"]),
-                        str(row["Değer / Miktar"]),
-                        str(row["Birim"])
-                    ])
-
-                pdf_table = Table(table_data, colWidths=[80, 260, 100, 80])
-                pdf_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1F4E78')),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, 0), 10),
-                    ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                    ('ALIGN', (2, 0), (3, -1), 'CENTER'),
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D9D9D9')),
-                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                    ('FONTSIZE', (0, 1), (-1, -1), 9),
-                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F9F9F9')])
-                ]))
-
-                elements.append(pdf_table)
-                doc.build(elements)
-                pdf_buffer.seek(0)
-                return pdf_buffer.getvalue()
-
-            pdf_bytes = generate_pdf(excel_rows, project_name, now_str)
-
-            st.download_button(
-                label="📄 PDF (.pdf) Formatında İndir",
-                data=pdf_bytes,
-                file_name=f"{file_clean_name}_Raporu.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
+                        {"Sistem
