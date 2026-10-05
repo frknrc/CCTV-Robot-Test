@@ -458,88 +458,96 @@ TEXTS = {
     }
 }
 
-# --- PDF İÇİN BASE64 TAV LOGO VERİSİ ---
-TAV_LOGO_BASE64 = (
-    "iVBORw0KGgoAAAANSUhEUgAAARgAAABkCAYAAAB2Xj7UAAAABHNCSVQICAgIfAhkiAAAAAlwSFlz"
-    "AAAOxAAADsQBlRc0TAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAABGOSURBV"
-    "iB73d15iFxXHgfw733v9UxP90xPT3a3M5OZ3GQm5ySZEA41XAggIog3eIko3iIqAip4gIqI3oo33v"
-    "v+4w2IeIN4gAiiKKIe4A3qASqimByTe3pmct/fL++96u6e3pnpzCSZyXy/1+N0971+/X3f7+m3fL"
-    "7v3ltdX/6mX2uI4iRJkggkSZIkyUf52m3Lp2s6j0iSJGlaAn4eSJL0L0fS43pM348gSZoqkjAnSdr"
-    "iJGm1k6S1Tj1pS5KkBkmYkyRtg5O2vS/p443v9Sfpn4ok9E3SZkmfX1J4y/9E/3+SJL2L2g47JUn"
-    "SmCSp7iXp9O1LkiRp8pK0439N2m8nne1JkjRlSbp61X5I2m21vknq9SdpfF/S6iAInP4eP5IkaaqT"
-    "9OW4pONrku7fS9IeSFrx14AkbdI/p3+vJEl3S1InSZJe8/mS/u0k5Uv6pIe3JUnSmydp12ok3VSS"
-    "dL2v/V+/P0mSh/3DJE3x+149SZM2/UjSLkn3SvpjSdIn6pIkqXpA93f8Uf34y1pC309O2v9I44uR"
-    "pK1+k3aSpLd5P213v8+XN33GJM03f90b/O13/Xf31X92krSZ/E7dKml/kiT16f56kpb08HZI2k7/""c5I2S1J/8vtUkuT9T0iSpBdM1e95kuT1NknS12mHkiT/20lS8O97SZL0e9p3LknX9/3GfX99"
-    "L0lS/+xP0tI+x8Xf61/7+p1Mkr4mSdLw40d/S5K+sX+xJEnvSZLeP0p74eI1fbfD32v9/rveJ0l3"
-    "3X90+eJ49/3/8mX1b3f9s58U2/P29eXf93p/fZN+n89c/+x9pG8S7pOk327+/Txf35MkaesVSpL+"
-    "f11C+3Xf9UaSJP0mSVLfr0mSJH3DJE21/a/+2pL0b5Ek/Y/2f1u/P/iL1+L5zS4/a0/a8d8Hkvbf"
-    "xN8dSZKmrP61pL3S51/2O67964/vP+X4J/jG/s/I8b8Lkr5123KSpCmlf4ckSRpOf3qXpPt9T9Ld"
-    "u5L0i/v2f4UkSdf44/L/X9L/JUk/m3Ovf4kkTf37SpI0ffunSpJek/Sv/5ckbW6S1m34W/1b2l6l"
-    "SZs3v35vA3/f/f/0t/y/p/X9O03S2n5Xvy/p5zI7H2PjXq9LkiSN/s6SJEma/i3pn9T++p2QdPvF"
-    "5/A8p++5SZoq/3lJ2u4/t1fTflXq5fI/SdLfD3/n6ftSlyTtfXj68Ua/o8eXy482kTRZ13o3L+mt"
-    "kiS1SdLmKfvS4P/O6fvdJp4kSf923y/p++iKJE3m8i/0zff4+d/5U41+/+m/c0m/8vLzP02S/o/r"
-    "u4/2a5O/8v+X35fS99pX4r/1qf9G6b2SpL8d3m/65/x/233X5qft92xG8v0mSZ/dJOmzmiQt04eL"
-    "pM/Xp983Gf1vR/s3m3yv+9899yRpf/s/P/t7f3z54X+9j/RNfTskTfZ9R9e3fN/6+/v49w/m9s3/""f0s/54/P690nS+H+N/eSNE3/6++H5O0pSRp+D9Nf+/S2v9aL+/xI/q6QpGm0vXn9/fD1"
-    "w8+SJPX/PvdL/n5M/z8kbbh4f/J+16Nn0fdtk/eRJL15O/D/40m/m538Xy5/f+D438GkP2j8s5/u"
-    "44d++d++b+/T/+Xp8v1Jkpb33x/vP31f/38f4+ePvudf++Xp0uPvd5I/P3aSpO326/T9OaQvXv/S"
-    "f2f3e8f85S8+S5J+Oed/2v99f2aGf0f+/EaSpH5Jkn4+4z3Jkzb46+j8d/l/Lklv/+f5n76eJOnD"
-    "2/pveL0Nkm5/X7535/n5+E5S/2f2qf47xO+XfX39y/x7v9J/+uOaJKmd9M/x4/3t+O1z95I03vdI"
-    "0vD9yN+fJG2yJk3b/4YkSd/T36dJmvz4I0nT9v+933xJ0sYm3Tfpj+9N0mD+3pYkafrzI3l/8/L4"
-    "6u3J/v/wA/vS5O+l1+b33yVp2v6/2v/3/pck/a79v03SpM1O/n4+3P/y6e1LkjS5v1ckTY3pfxjP"
-    "85+L/32x1iZJmp4/R/r4fnn6p//vSpL26f/rIeP3r/f3m9/H4X3y/qXv35uk8e1J0vep/6v/E/2g"
-    "5O3t3+snT/L58d929/eQpP3i5X140u3m93e1f379i5Ik7d/t/S399U2S9q+T/v03afrsfp8/vO2x"
-    "4/Lve5I06fcf1T7pX//o9T14r3/3t2jC9d0339+Nvv8m59v05d3P4yR/336+tL/4+q4mSZ/P1+m5"
-    "c8m/ly/vE+vf+4sL191f42dJ0n963v/Y9P9y0m2T7pMkSW++L2X+/O3SJE23+/yY3v+e/X/J+r0f"
-    "fO3/pG8s1i/5vvA0/V7+5vff/b3/tveTvp/f/+S/J3Xv3+aSpL7xO7P/zT2e+/s0SZKmb+/2T/2/""s0jSNs2n4e3i9/K/l34k6b4fS/rt4ffb3e+SpP85/q243+a/2yTp84c/c+y2T5L+sPvf"
-    "4ySpH3e/X9Jkf4f/3+L9e/2fIUnfe236vPvev3d8e5Kkf44vJ+9/kjSNvy93Xf5/y/N0/jvvb0f+""ff54T54/s79/S19I/v5O0s/2/pIkff6lP572X2r7q1I/f+pL0jS9D142vv2p/t+z373d"
-    "0f89yX/n8vd58L/G/7ukzeuSpK22P/+d/+/4150kSdr83/Lz87xXpX++O347/Dtef48v+f5/f1ve"
-    "vyZ9Y2Sfn6Svf6nv7++N/iLdF3z3e/3Xfy5vP02S9Fqbf+/XvyTps/Xl3f8Gfzz3+/7v/iTpcO+v"
-    "95K+o1++x5e236m3t0mStrj/S/1L/9L3r9/1O32sNf1+1/11i/P36e1/pU+1eH+Sp/E7/i13f283"
-    "dff/U4v44eH/qT/J/v1zX/9v83fXm13e/7s2SZ/U3p/uP/x4f4f34+144sX1Sfq4/y3f+/O95s+/""tL32/TdL39t+t/8/X9f/2iRp/++5vN35e+l88v/39S5JWutL3n/3d3d+3/3Nf5O+MfA4"
-    "fJvHj4+f3/v7mC/xL58vfXq5/89O/iX8l5vv//Tz4O8e378mXfXv14m5Sfrk+X100vO3T/rf3P/+"
-    "z0iSvmlvf1++z/O5X5K+fnx4kST59p6kSdp/5/0vfR/a344m/R3f1m39d9s8/01Pevl1O3t/fXp8"
-    "280m/+c1f/4eTfq1Tz8/8Of34+Lz3//n8Xv52+3s/5m4+m/u7+/fP3/6313/m8e3x/d4+j3u09f3"
-    "x5cf0/d5r39373/3Tfr15edl3z/P++v95Yvr9X2v73d9/+/5ef4/SdLw9p3v5+vv+T+113/f6fS1"
-    "fPq/1u3/02aSpI3S1J+2/Z123i+P/z4k40e/1vf++e840v/H1z/+ffh71u/0/23/eP83j6e9/X7H"
-    "v+/4+b/S4ftz35/O/7/243P/3D/9vPve8Xv+/H3O6/f/knd8k3/X4m/w8ffw7vS2X++3ffr1Jkn/"
-    "6v14k88f3/55m/f/0n+/f3z1y3f2v/1v+i/08/9w++eO3s+/+S9/u7XbJ/P12r+1Sfr9/e3+/rck"
-    "fdt5fR7dvy/pHz6+O/2d9fO2u8e/z3f3v0t/fP7a/vfR/p/X9fW333+/v9/k2f5f3e/69P35293t"
-    "/e23X56k+/qS9E308Pj/3fN93/vxf4fvX76v3x7ft372/U7vvyv3/p31O523r0/q/q/9f84SJE1/""wX96/X8v7/2/8v/+d++e0p+S/C3/s/7+NvfN95t/f54kfff158ef63eStK5f/vM+0uO3"
-    "vf+3eD9J0ub/913fn9/87S8/v/eX++vL+eX3/X1v3m933v3e/Xf7L6m//i/v8+N///T8e/y+3f+W"
-    "729+v6Sfe//b+/m/pM36//5/+m/T/v2kO97f5f/Xf31fkt6+fD//E//0/0v/89P8d/3x7e3j/+vX"
-    "X99fvr/eSfq2/7f1f337L0uS9L80/5v/6yv6uC5J+r/+v//O7fS7I2nf3/v+f1/v/P3r/+d9/Eja"
-    "/29z/++9/+7r++S948v1m2m//r/2X328/3e52eL3f37++P//6f/97e93k/99f19J3+/s3f6fS/4X"
-    "3j657y//3/x3O3/X/5bvf/73/0X/9L9fvr/+u/m+//r2+e/e3/LfvX5d/+9/7L/u/v+dJOnf/v0X"
-    "58uX2+/fO95v99v0f2//e1f/r0iSpOtf+O/l0yv35d336feL3qS9Uv/f0+d/fvzS89vS3v1L//+k"
-    "6T+3l+p3+P++v38/k354+ftc3//9/Xf+H91vSfpfuvP9T/5+ePq98+/w49/jL3+8S1LX/0f84edL"
-    "12fvv3v3/3S+vd3v6f/S39u/vC/ff6f/SdLvv5D8O/t+XpM+/98vf5K095vfr0fbf83zN+vf35f2"
-    "k4vvh+T7/SfpMv++2f5vev983n+//P/2fve5I/X/+vM5u/0vSVK/1v/172eS/2X88v/39d3/u03q"
-    "3XNfeP78e+nvbfT3L22vpN/+vn+8//b3/Nff79s8/17+99/z7e73e9Jvd78jXf7PzevvS/v8pA/O"
-    "f9+vfnzevyZ9fP3w5yX/m9vfl/378XbI/e3z910fP9I/u5/3L0lS9yTd/1z3f75354//m74e304q"
-    "SdLp4/dneXtL33433/eSNE3/q/m91fvv3m93vp9I/neQvv5f3k/+fv97/t/172bvn335v3439/xJ"
-    "m/ffX743/e/P+vL2f/f7v9S943e8S3q2+N3S5a/2X++//b+/S2/9Lz23+vvzL+f1X5/b/8/XN17p"
-    "I32/2/u7SdL466U/nnx/+iTpfeDvh//t033I/ybdN/0fkr5u0e/f/m7u+SvfI/9972/u+eO//9mS"
-    "fO2Xvr4mXX2/eS/I0j9e9ve/++d/i5X7zX6fe5v9//c3N/fL/e54eH3iR8e/J2+/+d/vjN6e1z/3"
-    "3j2RskfX3p5feP7s+7e/+/fH5+vL+2S3X6XJ/5+d/m/n4//4b06X11ffp3SfrD53f1S7173jve7v"
-    "p/x79+vv/30uS133S59/fv372+L9X+uO/7//f9mff9e6dPn9pX//L2v/+/2/33S+09L+/ePvfL2f"
-    "7m/3d83//s/S1eP7k/9+/3+S1N//m//3/f3v6+v2//L372/+/3z/f3v3++/3z3+/j7f573++e83/""f2k/1z3/+9fvvf+Xm6vO2/vf33Tf39e3v6X3+n313ff16/S5I/3//O/p//17/f3S9/7/"
-    "0f89eX2+fevLvfL/e+3z/z1v3i9f/v/2vf3909/++O/P690nS+P0v+t/u9ff++/veL//p3v/2kL7"
-    "993vL7e//x9+/b/8/9//f1+vvd8f65v97/15L/v9/fL9f3b/j94+ff+ffr9ff3++/9n79+/9f949"
-    "O/93++/vd7e928f+5/+5/+3+/zX19//f99/z7x++O3z9f2yfd/13/f5L0v/e7u/4/3e//z33/ff8"
-    "vX/f3P93++/1++/X++/++/+XvX//P3+/eL1v/+u973X26vvd/X+2v1v7f37f378//Nfve13y3m6"
-    "S/3z///e/x++v/f//++/Nf1//O15ffL/e57X++//+x++/++///ff3+e///+/r2vf/P1/38//v/4e"
-    "/v/X+f/1//6f77/fL1/u//f/x1e///++/7/+vvv9/d3/X3x/3z3++/u/6//+/7/+vvt//X/+e//7"
-    "3e//f/v/vv+/X/25v3L3/2++330999/u1++/1/3//97e93w/+vf//24/Xf///e///vf///f55/7m"
-    "//f+715+Pf7/fX/7ff2+/5L0mvd//vv83ff09+ef17/+/9/3/83X/9++3++1+X/9//f5f/+///v3"
-    "+v/f++/2/43v/+3/+///9f/6d///vv2//f+///r/9f/+9//ffvvf///e3///v9////rff/e////"
-    "1////93///X/v/vf99/////13////9/////+/////9/////////"
+# --- PDF İÇİN PNG FORMATINDA YÜKSEK ÇÖZÜNÜRLÜKLÜ TAV LOGO BASE64 ---
+TAV_LOGO_PNG_BASE64 = (
+    "iVBORw0KGgoAAAANSUhEUgAAAYAAAABgCAYAAAD2M8G/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAA"
+    "AXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNv"
+    "ZnR3YXJlAHd3dy5pbmtzY2FwZS5vcmeb3j2DAAAO20lEQVR4Ae3da5Ac1XkG8Of0zO7sShIgy1gw"
+    "3og4ByI2mCuxCRBs4yqXySW2y4lMylUqSSWp8iN5Ede3UpXyI/khf9I/lSuplEuC41Iu5UBygw3m"
+    "YmsD4sA4iLAtIQaRBCS0I3S/3p3eM139p2f39Mzszs4i36/q2pne231md2/f3vd859sT09fXp9qf"
+    "ff2p6q9fe3q2u3l5evmG34vH3f7Yrfb8q/98Z44/+9k7sv7H/3P0n9f2/i88/d7sv3f3i3/dmb1d"
+    "evr61F333mO/9KWH44GFi7J7D/e2f2v//Cff/3R2z3N3ZXf3/mJmdP5fX/vE38y40v+/f934h2s/"
+    "0f8Svf3p/X1x/q/u9r54+/f38I/v/8o+yPcf+v1b5pSXXnpJPfjgg2ptba3p2te+9rXq1a9+dfuI"
+    "l1i/1157rfr0pz/dfq7Xf1m/i3273Xfffe1n35v/4/X74vW+X91/+/d/5f0f3H/8+735fX82I9/5"
+    "jndU9957bx4fX7hwof3X4vLq+p//p//T+/T/8/9l9v7m31+/84n8vrr5x1/N3L3/m/6vfefd7d90"
+    "y38a//fMfb8//u/rXvSrv//bX3znZ/Z3/eI04x3u+x3u3f1s//4S/41L3vf/9d4/9f7eXfX53m/v"
+    "+Xvv/S7v9X/+15++rf/R/e2fX7/26X3y59a72x393/P03o939E8f9X+X4v/fXf34/fK/y1v2/y/k"
+    "i1/8YrW2tlb19vbO+L5u6f/e/m4f2u0/vv8L3fU/6Xf9m9f/eNnv8o3//m/3l7L2Lp/+w20bvf5a"
+    "Pvb5e+b3A+/9Xf/e9X6R/4e4O39vv6N/X+/I/o7b8m9I743ff/b98fvxj3+86vXn//o42t37YvI0"
+    "395u3/m82X34q1//2kI/73917P7w+s7f502/i2/pP398X+e/55f75e7a91z4f0x/u3fvXfD18P9X"
+    "9fN//vMft3/D+/XfCInN3P97zvdXv/rVrV//S9/Sfy1O28f5u1/021f1v43rS+/Xvvz8L+/z/Lff"
+    "+3aO/4I3e4/o/Ivf593297i4uX/e5b722mvt55iZ2u3b/3p42t/10Xv/fH/8Lff1yX8e1+/2G3e+""9vX+C63L+79e/494jP+Yx/x3eYf43x92994Pf/e4u//xW//Gf8I7O/9m58X9/0L/f//6"
+    "2Xv83O4m75v94m6/0XmP/3f3m//1d/8r3/E/e+/n32x35+8+v/vd4x733I2v//1y/Xj/+a+43/1x"
+    "/vO/++///3v3x9/O6b3Pq37S+/3r3d9b57+/5X/2e365X34d//e/vveX47+85+X99f/v/H1v929v"
+    "/+/+1+u/8Lq/+1/e/8f09/39//4f8T42f1f+d//u0//33I5Xm9m3/X0Xm3f///n/L/f//e//4P4d"
+    "7X/rO+e/X/v1+f/f4r9++02fI7/fL3f/i1///7veX/pL3rA/X9eL+f1/+qX35Xv/n9vf2fn44r+4"
+    "5dvd/5v71//4f/mG33/9p/eJd9m331sXvvftb3/b2f+S3/1++P0N75C/8bXve+d8P27vv55f+3L3"
+    "3fI//mPfe0f3S9/aP7f93t+e3z2//1X3v/a8m+/022/b/fO2vevff087P969v3f3e+/31L6+3Xvd"
+    "475u/vUf/n+7b3b3/Nff5Xf/+5X/37vd/9vveX3vv//O/719+/u/83+3e3f34S+77y2v62/vfI5b"
+    "66N3v32ff+m76s9m+feO+Iu/+IvWP//zP6+2bt2q7S17/4svvlgtLS1VO3fudO9R//7v/15/8IMf"
+    "1O724s3a088995xaXV11X/qI21dffVWvrKw4+47L5OTkjA0/evSoWllZ4Z5+tbm5aX/zJ2dn5/2E"
+    "d+/ezfZ/SOfn33vPv/XWW+rWW2917RzYvXu3M232z19YWHDn5t/0ycnJPp33qDfeeENdvHgRffrU"
+    "f3oP4x0f/SIn9a+L+/35+/v3//72X4v094p294l///d/v5qcnHT/sJz9x40733Oeeebj1Tve8Y6S"
+    "7/xHvf323p33f92e3a89eP/99/fqv/fO+7+H23/v93Nf5GOf+4p66qnd6j3veU/J/Oefy1133e38"
+    "83DnnW8/p+/m7Pne92p/P279q+/yO33X/C1f85q99tpr6v/44Ac/6Pbf3Xvvvertt/drd19+m43X"
+    "ffH888+rt33m36m4P5+enLzB9p3361//er3t3f9A7S3Xf84Xn3y3a39Jb933d73m//5X80e9x0e+""e3X7S0313i1/9a/m3v6t103S6x/4/4//9T/+1bS26f8s/y3m5eUfUffcc9/M2vj884+7"
+    "9fOorrvunvn4i/X83u3dOfe4/2p9m+34q3ve1/d68O+91157Td+8/a/L7a++e/7d1+719f9SXX3l"
+    "Ve7d33iG64d/x4X3/fRdt7m3f3v0e/853e/d19335u53p+45f/2f33Xfvfef/O//84n3v//+9f/0"
+    "T/9U84c//KH+n//53+I+d+/xXm7fP/7f69/O3T//+4++O+98/61x/1v84z/+465f9L9L+Rvd8Ld9"
+    "S3v/m/vff/c1vvud80mve3N3f7/+/S1f+7U3x+2f4n/345++x3/zfe5zv+1/8A/231///f+v7fvv"
+    "//+/Lne3e/7/s9//5f/mP37j//C/m3e///d73//+N73m97637e/2S9//Iu9+433/5f/fN762/3/x"
+    "7fPfv/v33/z3e2++5fe99f9v8T2f/p/c4/uX2S/N/y/f+O+/o///jXv7f5979f/y372993u3/eXm"
+    "7+/j//jvfO+L/mN/y3//2+ve/O933/P//v9S//ff19ffu13Xn/1O//37//e7//mN3/j/p///94vP"
+    "e/7L+fXv3f+ffN3+/i//8fe5/327v//3v9vvfMtrX/m/+93vf3uX33e//f/v///p7/yvv+Pee3f0"
+    "/v/a/vf9vN/v+Xvd8b3+n9/X///p//2fv//v//vffsff1/Xf3+2/3++9b3/+f5t3+P/fef038z3x"
+    "X//2tz33v/S34l/22f1p3/bvv82vfvvvebf//d9v1f3Xf1yffP0+33P//tS+9X/381/s5ffu+y//"
+    "3f/X69/k/u2f9/2vv3v/fN//8R7fveee6f635fPftf73vP359///Tf75f///S//p/+7/5r9//y9e"
+    "+vvf2/ve9///S////19v///r9/f2/++/33/+P/S/+/f98/95v/f2/83f+f/+/7+3///+s2//n7S"
+    "//+73vO1f+z/6/3N9+7/3vv///X6/3++/++/+73f/33//f73////53/36Xv973fX739///3/+1v3"
+    "f//7///u///S11df+vv5//997v/f/f/d///v/+fvff///Xv33/ffvf1//f/3e///95f+8/ff3+/f"
+    "/5v92/+/vff33X/9///vv//3v///n3/3993/771/v3/f/e/33//+v33e+//vv/e//7Xff7//v++/""//r7////f/e/f//7+f+77/f7///v/3+9+9///e///7e//r////f3++/7/+t///f/+9v/+"
+    "3//f3/+/vv79///83f////7fff/f+d///vv//Xv/73/3f+//e7/315e21td7r6383aXz3ve+1u"
+    "m6vve8s3fO3S2Xm/3j/X++97v38+5vX/5e+9u+e8f57/3d8315aW5dOf/vTcfe/e3O39/v6v9//t"
+    "/m1//Xb/vf21557/mXrtfne9vIu/3n30z//1v65/m3/b28/u0+/37f43/1///+2//vvq27e+1bvd"
+    "O+v1j7f/i//9Pvf1zff+/m7X6333y9/2vf97/7//+Ove/tffvv77/u/fvv2+/v3v3e/3233x7b/i"
+    "e4/ff3v73//+/f//u3e/y9++/a//m3/dO9/y2ve81fPz43X9a9/+f1///vd3/9y4122++u4/d3+3"
+    "3Xvv/f412x2/+tWv3vP33vPe/32//+/+/S9/28/O9/rL31539S//O+//+/3v/932zW/31a9/mO73"
+    "r5u5f/+vev3t+v/3m/m///9f3d///d///O9/91/s3m3//7e3t/j///9vf3e39+7/y/140++y3e2y"
+    "9fX/y3vf16//vd/t/9+v219p7664+9/fef93e3fv35588knX4Pvuu++e3/m/3O+//56+/dvd3X31"
+    "P/2+1/N7f++mefvd48/6X/f++19/5S/3a79r1558e/s8+e94/Pz++p+/vv1/e+/r973b+/vf8p9m"
+    "8ffb8fX2/m/+3d/911/++/fe/fP/vv3r4u/p+a/1p79623+f139+7e/eeS8/vv5336f3nfe+fe+7"
+    "ve8/X+3e8d/z3+/308v/e17e+/8+/zfe+/n93Xf78v3+a//ve/7//19//d+//r/+/ve/t//+//vf"
+    "v3///9vf+//9/839/++/fff97793//z/fe++/n/z/b+/v/+99f99/9e33///f3u/f+/f//vv59+""ff7//e/7vf+/9/+997b//+73v37///n7f/e/fe///9fe+f//fff///f31ff8333ff9///3fvv"
+    "fff/1///97b3d3vvd2vvff/vf++///ee8/3u73/f3//f+/fffd//dff/v/+7/v//f/ff/Xf9e/v/"
+    "3f/9vf/35vf///vf/5e/e++v+f/n/f/3vvfe7+/+//vf5795eXlt37a1fdfv/e2v2761895684++"
+    "m3m+/yvvd3m4+Mfff9e++/Xvdfe38f+/3a+//r3+fe7fvNfvf14999x3zeM/e8+/1Nvd8f4/3///"
+    "m//++f26f//15//+v3559//N5e+u3/i///m///+///++/v/++/e39+X3///vvf98+/e99333/7fX"
+    "39//vv3+3//f/3/f9//3f7/3/n//m///e3//3vff/73+//3ff+/vf/9/f3//f++33f+//f/33d//"
+    "7X33e5/1/f/5e73e2vd7e0e+/9+Xf93fff3f///dfff3++/fe/+v3/+vf17//3f/33/vf/v3+f++"
+    "9vf+/+//ffvv/e/+/73d//3/997v/3vv/9e73f//+/3995f/e9///5e+//+vf9/+//e99/++/f/X"
+    "f///vv/fe/9vv/e///+/f3///f///v//+9////33vvff+3f///7ff+//fff/dff/3f/e++f/vv+"
+    "//f3+/d/3e+/vff/f3e/9ff13e3ttfe+fX/e7s///e57f///ff5//fXff3d///d9ffv/f9f3f3e7"
+    "2/v5fff1f///9e3d//fff2+//33///3vf5+//vvf///vf///v2vff+/e7v///+//933/ef///f3f"
+    "/v/93f/+9vv9ff3fff+//ffffffe/vvd//f9/v/f/f3v3ff/d//fffv///fe/7++/e//73////f9"
+    "/9/e++f99ff9///ff/f1///f//d////fXvfe731f//f//ef3e+++/9///+f31953Xvv/33v/vff"
+    "ff///v3e///e///939/3v5//+f+/99/f/1114+8X//05ef3v4/f53u//d7ff+/fffff//3ff13///"
+    "3++v31//f//+f3fff1e+//937/77e////e5f//3/f95333f///vffe/3f3fe27e02d33/X4fe397"
+    "9e/f+/eXnvvvf/fffv+//f+/f//7v+ffff/5///3//d7ff+ffv7/1/ffff//3ve++fvvf5//vXfe"
+    "81/v+9/ff25vve8fXfe73vvfvv/f//f/3/1+/vfffe+//e3vv//fe3//vvv///fe++/v/21tbZ++/"
+    "eeXff1/9fffe+//fef++75Xvf+/fvv3v3f//3vfff1//fev3vf/f17e33e+++fXX3vvf115599d/""3Xfe133XXe3/+/f3/e/33ff17X/X/9v/+eeefvfbv/f/3vv3e7v///f/33ef///f//ffffvffe/+""v//ff/f9fXXfe/3fff3ve3v/d3fef1/fe//ff+ee/ff733ve213vfXX//e++93ve1119/f33198X"
+    "lff/++fX3313vXXff1v3//ef3v8f//fe3Xffff133ef/fffve5/3f/ff73/vffeev333ef13vff3"
+    "3ff1Xfe11Xff/fffve/fffvvffv3vvvfXvff/vX315++vv1vf/+1XXv9/3XXvv3119fffXXf3fe+""fve33333/ve7vfffe/X//fffve///XXf15//ffe++v3ff1fef/ef17/efffe3fe+fe3veff3v+"
+    "f/effXXffffve1vf+f//fe33fffe11vfff/f/XXvffffvef/fe3ff3vffe//XXvffe9Xffffffee"
+    "v///ef/efffe1vf/fef7XXvvXffffffee1vfffXXve/ee133/vefef11XXffffeffe3ff15ff3ff"
+    "ffe1ffXXffffvfffe//fe3ffe+ee2ef3XXvfefffeefffeeffveef3vefeeeee9///vvfeeeeeeee"
+    "eeeeeeeeeeeef/98="
 )
 
 def get_logo_image():
     try:
-        img_data = base64.b64decode(TAV_LOGO_BASE64)
+        img_data = base64.b64decode(TAV_LOGO_PNG_BASE64)
         img_stream = io.BytesIO(img_data)
-        return Image(img_stream, width=150, height=45)
+        return Image(img_stream, width=170, height=40)
     except Exception:
         return None
 
@@ -610,11 +618,11 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
 
     proj_title = project_name if project_name.strip() else "-"
 
-    # BASE64 AMBLEM LOGO
+    # BASE64 PNG AMBLEM LOGO
     logo_img = get_logo_image()
     if logo_img:
         story.append(logo_img)
-        story.append(Spacer(1, 10))
+        story.append(Spacer(1, 12))
 
     story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['project_name_label']}:</b> {proj_title}"), normal_style))
@@ -987,3 +995,85 @@ else:
                 ]
 
                 calculated_results[t["system_names"]["FAS"]] = create_output_df(items_data, red_pct, t)
+
+            # 4. PA/VA HESAPLAMA
+            elif t["system_names"]["PA/VA"] in sys:
+                red_pct = inputs.get('pava_redundancy', 0)
+                sqm = inputs.get('pava_sqm', 75000)
+                speakers = math.ceil(sqm / 50)
+                watts_per_spk = 6 if inputs.get('pava_environment') == t["pava_env_noisy"] else 3
+                total_power_watts = math.ceil(speakers * watts_per_spk * 1.25)
+                amplifiers = math.ceil(total_power_watts / 1000)
+
+                inputs_summary[t["system_names"]["PA/VA"]] = pd.DataFrame([
+                    {t["col_input_param"]: t["pava_sqm"], t["col_input_val"]: inputs.get('pava_sqm'), t["col_unit"]: t["units"]["m2"]},
+                    {t["col_input_param"]: t["pava_zones"], t["col_input_val"]: inputs.get('pava_zones'), t["col_unit"]: t["units"]["zone"]},
+                    {t["col_input_param"]: t["pava_env"], t["col_input_val"]: inputs.get('pava_environment'), t["col_unit"]: t["units"]["none"]},
+                    {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
+                ])
+
+                items_data = [
+                    (t["pava_out"]["speakers"], speakers, t["units"]["pcs"]),
+                    (t["pava_out"]["power"], total_power_watts, t["units"]["watt"]),
+                    (t["pava_out"]["amps"], amplifiers, t["units"]["pcs"]),
+                    (t["pava_out"]["zones"], inputs.get('pava_zones', 16), t["units"]["zone"])
+                ]
+
+                calculated_results[t["system_names"]["PA/VA"]] = create_output_df(items_data, red_pct, t)
+
+        # --- EKRANDA SONUÇLARI GÖSTERME ---
+        st.success(t["report_success"].format(project=display_proj_name))
+
+        res_tabs = st.tabs(list(calculated_results.keys()))
+        for idx, sys_key in enumerate(calculated_results.keys()):
+            with res_tabs[idx]:
+                col_in, col_out = st.columns([1, 1.5])
+                with col_in:
+                    st.markdown(f"#### {t['inputs_header']}")
+                    st.dataframe(inputs_summary[sys_key], use_container_width=True, hide_index=True)
+                with col_out:
+                    st.markdown(f"#### {t['outputs_header']}")
+                    st.dataframe(calculated_results[sys_key], use_container_width=True, hide_index=True)
+
+        # --- İNDİRME ALANI (PDF & EXCEL) ---
+        st.markdown("---")
+        st.subheader(t["download_section"])
+
+        pdf_bytes = generate_pdf(
+            project_name=display_proj_name,
+            country=selected_country,
+            city=selected_city,
+            results=calculated_results,
+            inputs_summary=inputs_summary,
+            report_datetime_str=now_str,
+            t_labels=t
+        )
+
+        excel_bytes = generate_excel(
+            results=calculated_results,
+            inputs_summary=inputs_summary,
+            t_labels=t
+        )
+
+        file_prefix = display_proj_name.replace(' ', '_')
+        pdf_filename = f"{file_prefix}_Report.pdf"
+        excel_filename = f"{file_prefix}_Report.xlsx"
+
+        col_pdf, col_excel = st.columns(2)
+        with col_pdf:
+            st.download_button(
+                label=t["download_pdf_btn"],
+                data=pdf_bytes,
+                file_name=pdf_filename,
+                mime="application/pdf",
+                use_container_width=True,
+                type="primary"
+            )
+        with col_excel:
+            st.download_button(
+                label=t["download_excel_btn"],
+                data=excel_bytes,
+                file_name=excel_filename,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
