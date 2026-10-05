@@ -65,6 +65,7 @@ TEXTS = {
         "submit_btn": "🚀 Tüm Seçili Sistemlerin İhtiyaç Raporunu Oluştur",
         "report_success": "✅ **{project}** İçin Seçilen Sistem Planlama Raporu Başarıyla Hesaplandı!",
         "download_section": "📥 Rapor Çıktısı Alın",
+        "download_pdf_btn": "📄 PDF Raporunu İndir",
         "report_date_label": "Rapor Tarihi",
         "location_label": "Konum",
         "inputs_header": "📋 Girdi Parametreleri (Tasarım Kriterleri)",
@@ -132,6 +133,7 @@ TEXTS = {
         "submit_btn": "🚀 Generate Requirements Report for Selected Systems",
         "report_success": "✅ Planning report successfully generated for **{project}**!",
         "download_section": "📥 Download Report",
+        "download_pdf_btn": "📄 Download PDF Report",
         "report_date_label": "Report Date",
         "location_label": "Location",
         "inputs_header": "📋 Input Parameters (Design Criteria)",
@@ -199,6 +201,7 @@ TEXTS = {
         "submit_btn": "🚀 Таңдалған жүйелер бойынша есепті қалыптастыру",
         "report_success": "✅ **{project}** жобасы үшін жоспарлау есебі сәтті есептелді!",
         "download_section": "📥 Есепті жүктеп алу",
+        "download_pdf_btn": "📄 PDF есебін жүктеп алу",
         "report_date_label": "Есеп күні",
         "location_label": "Орналасқан жері",
         "inputs_header": "📋 Енгізілген параметрлер (Жобалау критерийлері)",
@@ -460,10 +463,6 @@ else:
             if t["system_names"]["CCTV"] in sys:
                 st.markdown(f"### {t['cctv_title']}")
                 
-                inputs['cctv_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="c_red"
-                )
-                
                 inputs['cctv_airport_type'] = st.radio(
                     t["cctv_scope"],
                     [t["cctv_opt1"], t["cctv_opt2"]],
@@ -475,16 +474,6 @@ else:
                     inputs['cctv_checkpoints'] = st.number_input(t["cctv_checkpoints"], min_value=1, value=20, key="c_check")
                 with c2:
                     inputs['cctv_fence_m'] = st.number_input(t["cctv_fence"], min_value=500, value=8000, step=500, key="c_fence")
-                    inputs['cctv_use_anpr'] = st.checkbox(t["cctv_anpr_chk"], value=True, key="c_anpr_chk")
-
-                if inputs['cctv_use_anpr']:
-                    ca1, ca2 = st.columns(2)
-                    with ca1:
-                        inputs['cctv_lanes'] = st.number_input(t["cctv_lanes"], min_value=1, value=8, key="c_lanes")
-                    with ca2:
-                        inputs['cctv_anpr_speed'] = st.selectbox(t["cctv_speed"], [t["cctv_speed_low"], t["cctv_speed_high"]], key="c_speed")
-                else:
-                    inputs['cctv_lanes'] = 0
 
                 c3, c4 = st.columns(2)
                 with c3:
@@ -495,12 +484,24 @@ else:
                     inputs['cctv_storage_days'] = st.selectbox(t["cctv_days"], [30, 60, 90, 180], index=1, key="c_days")
                     inputs['cctv_resolution'] = st.selectbox(t["cctv_res"], ["4MP", "2MP", "8MP"], key="c_res")
 
+                st.markdown("---")
+                inputs['cctv_use_anpr'] = st.checkbox(t["cctv_anpr_chk"], value=True, key="c_anpr_chk")
+
+                if inputs['cctv_use_anpr']:
+                    ca1, ca2 = st.columns(2)
+                    with ca1:
+                        inputs['cctv_lanes'] = st.number_input(t["cctv_lanes"], min_value=1, value=8, key="c_lanes")
+                    with ca2:
+                        inputs['cctv_anpr_speed'] = st.selectbox(t["cctv_speed"], [t["cctv_speed_low"], t["cctv_speed_high"]], key="c_speed")
+                else:
+                    inputs['cctv_lanes'] = 0
+
+                inputs['cctv_redundancy'] = st.number_input(
+                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="c_red"
+                )
+
             elif t["system_names"]["ACS"] in sys:
                 st.markdown(f"### {t['acs_title']}")
-                
-                inputs['acs_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="a_red"
-                )
                 
                 ac1, ac2 = st.columns(2)
                 with ac1:
@@ -514,12 +515,12 @@ else:
                     inputs['acs_face_rec_qty'] = st.number_input(t["acs_face"], min_value=0, value=10, step=1, key="a_face_qty")
                     inputs['acs_fingerprint_qty'] = st.number_input(t["acs_finger"], min_value=0, value=15, step=1, key="a_finger_qty")
 
+                inputs['acs_redundancy'] = st.number_input(
+                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="a_red"
+                )
+
             elif t["system_names"]["FAS"] in sys:
                 st.markdown(f"### {t['fas_title']}")
-                
-                inputs['fas_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="f_red"
-                )
                 
                 fc1, fc2 = st.columns(2)
                 with fc1:
@@ -528,12 +529,12 @@ else:
                 with fc2:
                     inputs['fas_beam_detectors'] = st.number_input(t["fas_beam"], min_value=0, value=6, key="f_beam")
 
+                inputs['fas_redundancy'] = st.number_input(
+                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="f_red"
+                )
+
             elif t["system_names"]["PA/VA"] in sys:
                 st.markdown(f"### {t['pava_title']}")
-                
-                inputs['pava_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="p_red"
-                )
                 
                 pc1, pc2 = st.columns(2)
                 with pc1:
@@ -541,6 +542,10 @@ else:
                     inputs['pava_zones'] = st.number_input(t["pava_zones"], min_value=1, value=16, step=1, key="p_zones")
                 with pc2:
                     inputs['pava_environment'] = st.selectbox(t["pava_env"], [t["pava_env_std"], t["pava_env_noisy"], t["pava_env_quiet"]], key="p_env")
+
+                inputs['pava_redundancy'] = st.number_input(
+                    t["redundancy_label"], min_value=0, max_value=100, value=10, step=5, key="p_red"
+                )
 
     st.markdown("---")
     submit_button = st.button(t["submit_btn"], use_container_width=True, type="primary")
@@ -582,7 +587,6 @@ else:
                 poe_switches_24p = math.ceil(total_cams / 20)
 
                 inputs_summary['CCTV'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"},
                     {"Girdi Parametresi": t["cctv_scope"], "Değer": inputs.get('cctv_airport_type'), "Birim": "-"},
                     {"Girdi Parametresi": t["cctv_sqm"], "Değer": inputs.get('cctv_sqm'), "Birim": "m²"},
                     {"Girdi Parametresi": t["cctv_checkpoints"], "Değer": inputs.get('cctv_checkpoints'), "Birim": "Nokta"},
@@ -591,7 +595,8 @@ else:
                     {"Girdi Parametresi": t["cctv_cr"], "Değer": inputs.get('cctv_control_rooms'), "Birim": "Adet"},
                     {"Girdi Parametresi": t["cctv_op"], "Değer": inputs.get('cctv_operators'), "Birim": "Masa"},
                     {"Girdi Parametresi": t["cctv_days"], "Değer": inputs.get('cctv_storage_days'), "Birim": "Gün"},
-                    {"Girdi Parametresi": t["cctv_res"], "Değer": inputs.get('cctv_resolution'), "Birim": "-"}
+                    {"Girdi Parametresi": t["cctv_res"], "Değer": inputs.get('cctv_resolution'), "Birim": "-"},
+                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"}
                 ])
 
                 items_data = [
@@ -615,13 +620,13 @@ else:
                 controllers = math.ceil((total_doors + inputs.get('acs_turnstiles', 16)) / 4)
 
                 inputs_summary['ACS'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"},
                     {"Girdi Parametresi": t["acs_s_doors"], "Değer": inputs.get('acs_single_doors'), "Birim": "Adet"},
                     {"Girdi Parametresi": t["acs_d_doors"], "Değer": inputs.get('acs_double_doors'), "Birim": "Adet"},
                     {"Girdi Parametresi": t["acs_turnstiles"], "Değer": inputs.get('acs_turnstiles'), "Birim": "Adet"},
                     {"Girdi Parametresi": t["acs_users"], "Değer": inputs.get('acs_users'), "Birim": "Kullanıcı"},
                     {"Girdi Parametresi": t["acs_face"], "Değer": inputs.get('acs_face_rec_qty'), "Birim": "Adet"},
-                    {"Girdi Parametresi": t["acs_finger"], "Değer": inputs.get('acs_fingerprint_qty'), "Birim": "Adet"}
+                    {"Girdi Parametresi": t["acs_finger"], "Değer": inputs.get('acs_fingerprint_qty'), "Birim": "Adet"},
+                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"}
                 ])
 
                 items_data = [
@@ -650,10 +655,10 @@ else:
                 panels = math.ceil(loops / 8)
 
                 inputs_summary['FAS'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"},
                     {"Girdi Parametresi": t["fas_sqm"], "Değer": inputs.get('fas_sqm'), "Birim": "m²"},
                     {"Girdi Parametresi": t["fas_rf"], "Değer": "Evet" if inputs.get('fas_raised_floor') else "Hayır", "Birim": "-"},
-                    {"Girdi Parametresi": t["fas_beam"], "Değer": inputs.get('fas_beam_detectors'), "Birim": "Çift"}
+                    {"Girdi Parametresi": t["fas_beam"], "Değer": inputs.get('fas_beam_detectors'), "Birim": "Çift"},
+                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"}
                 ])
 
                 items_data = [
@@ -677,10 +682,10 @@ else:
                 amplifiers = math.ceil(total_power_watts / 1000)
 
                 inputs_summary['PA/VA'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"},
                     {"Girdi Parametresi": t["pava_sqm"], "Değer": inputs.get('pava_sqm'), "Birim": "m²"},
                     {"Girdi Parametresi": t["pava_zones"], "Değer": inputs.get('pava_zones'), "Birim": "Zone"},
-                    {"Girdi Parametresi": t["pava_env"], "Değer": inputs.get('pava_environment'), "Birim": "-"}
+                    {"Girdi Parametresi": t["pava_env"], "Değer": inputs.get('pava_environment'), "Birim": "-"},
+                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"}
                 ])
 
                 items_data = [
