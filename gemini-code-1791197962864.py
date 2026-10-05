@@ -1,5 +1,7 @@
 import streamlit as st
 import math
+import pandas as pd
+from io import BytesIO
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -19,7 +21,6 @@ hide_st_style = """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
 # --- ŞİRKET LOGOSU VE BAŞLIK ---
-# Aşağıdaki tırnak içine kendi logonuzun internet linkini yapıştırabilirsiniz.
 logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg" 
 
 col_logo, col_title = st.columns([1, 4])
@@ -58,7 +59,6 @@ with st.form("cctv_formu"):
         resolution = st.selectbox("Tercih Edilen Kamera Kalite Standardı", ["4MP (Önerilen / Optimal)", "2MP (Full HD - Standart)", "8MP (4K - Yüksek Detay)"])
 
     st.markdown("---")
-    # Form Gönderme Butonu
     submit_button = st.form_submit_button("🚀 Tasarımı ve İhtiyaç Raporunu Oluştur", use_container_width=True)
 
 # --- MÜŞTERİ BUTONA BASTIĞINDA ÇIKACAK SONUÇ EKRANI ---
@@ -117,3 +117,43 @@ if submit_button:
     with tab3:
         st.write(f"• **Video Wall / İzleme Monitörü:** `{monitors} Adet` 55\" Ekran")
         st.write(f"• **Operatör İş İstasyonu (PC):** `{workstations} Adet` (Çoklu ekran destekli PC)")
+
+    # --- EXCEL EXPORT (İNDİRME) BUTONU ---
+    st.markdown("---")
+    st.subheader("📥 Raporu Bilgisayara İndir")
+
+    # Excel Veri Tablosunu Hazırlama
+    excel_data = [
+        {"Kategori": "Girdi / Parametre", "Bileşen": "Havalimanı Tipi", "Miktar / Değer": airport_type},
+        {"Kategori": "Girdi / Parametre", "Bileşen": "Terminal Alanı (m²)", "Miktar / Değer": sqm},
+        {"Kategori": "Girdi / Parametre", "Bileşen": "Çevre Çit (Metre)", "Miktar / Değer": fence_m},
+        {"Kategori": "Girdi / Parametre", "Bileşen": "Güvenlik Noktası", "Miktar / Değer": checkpoints},
+        {"Kategori": "Girdi / Parametre", "Bileşen": "Kayıt Süresi (Gün)", "Miktar / Değer": storage_days},
+        {"Kategori": "Kamera Dağılımı", "Bileşen": "Terminal İçi Sabit Dome/Bullet", "Miktar / Değer": terminal_cams},
+        {"Kategori": "Kamera Dağılımı", "Bileşen": "Pasaport/Güvenlik Detay (FR)", "Miktar / Değer": checkpoint_cams},
+        {"Kategori": "Kamera Dağılımı", "Bileşen": "Çevre Çit Sabit Kamera", "Miktar / Değer": fence_fixed},
+        {"Kategori": "Kamera Dağılımı", "Bileşen": "Çevre Çit Termal / PTZ", "Miktar / Değer": fence_thermal_ptz},
+        {"Kategori": "Kamera Dağılımı", "Bileşen": "TOPLAM KAMERA", "Miktar / Değer": total_cams},
+        {"Kategori": "Depolama & Sunucu", "Bileşen": "Net Depolama (TB)", "Miktar / Değer": total_storage_tb},
+        {"Kategori": "Depolama & Sunucu", "Bileşen": "Ana Kayıt Sunucusu (64Ch)", "Miktar / Değer": recording_servers},
+        {"Kategori": "Depolama & Sunucu", "Bileşen": "N+1 Failover Yedek Sunucu", "Miktar / Değer": failover_servers},
+        {"Kategori": "İzleme Odası", "Bileşen": "55\" İzleme Monitörü", "Miktar / Değer": monitors},
+        {"Kategori": "İzleme Odası", "Bileşen": "Operatör İş İstasyonu (PC)", "Miktar / Değer": workstations},
+    ]
+
+    df = pd.DataFrame(excel_data)
+
+    # Excel Dosyasını Hafızada Oluşturma
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='CCTV_Oneri_Raporu')
+    processed_data = output.getvalue()
+
+    # İndirme Butonu
+    st.download_button(
+        label="📊 İhtiyaç Raporunu Excel (.xlsx) Olarak İndir",
+        data=processed_data,
+        file_name="CCTV_On_Tasarim_Raporu.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True
+    )
