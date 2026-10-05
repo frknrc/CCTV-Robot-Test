@@ -3,14 +3,12 @@ import math
 import pandas as pd
 import io
 import os
-import requests
-from PIL import Image as PILImage
 from datetime import datetime
 import pytz
 
 # PDF Oluşturma Kütüphaneleri
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
@@ -121,6 +119,7 @@ TEXTS = {
         "project_name_label": "📌 Havalimanı / Proje Adı (Zorunlu)",
         "project_name_placeholder": "Lütfen proje adını yazınız...",
         "warning_no_project": "🚨 Rapor oluşturabilmek için 'Havalimanı / Proje Adı' alanını doldurmanız zorunludur!",
+        "warning_missing_inputs": "🚨 Lütfen seçili sistemlerdeki zorunlu parametreleri doldurunuz!",
         "country_label": "🌍 Ülke",
         "city_label": "🏙️ Şehir",
         "select_systems_title": "🎯 Planlanacak Zayıf Akım Sistemlerini Seçiniz",
@@ -247,6 +246,7 @@ TEXTS = {
         "project_name_label": "📌 Airport / Project Name (Required)",
         "project_name_placeholder": "Please enter project name...",
         "warning_no_project": "🚨 'Airport / Project Name' is required to generate a report!",
+        "warning_missing_inputs": "🚨 Please fill in the required parameters in selected systems!",
         "country_label": "🌍 Country",
         "city_label": "🏙️ City",
         "select_systems_title": "🎯 Select ELV Systems to Plan",
@@ -373,6 +373,7 @@ TEXTS = {
         "project_name_label": "📌 Әуежай / Жоба атауы (Міндетті)",
         "project_name_placeholder": "Жоба атауын енгізіңіз...",
         "warning_no_project": "🚨 Есепті қалыптастыру үшін 'Әуежай / Жоба атауы' өрісін толтыру міндетті!",
+        "warning_missing_inputs": "🚨 Таңдалған жүйелердегі міндетті параметрлерді толтырыңыз!",
         "country_label": "🌍 Ел",
         "city_label": "🏙️ Қала",
         "select_systems_title": "🎯 Жоспарланатын әлсіз тоқ жүйелерін таңдаңыз",
@@ -566,34 +567,17 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         leading=14
     )
 
-    # --- TAV LOGOSUNU İNTERNETTEN CANLI PNG OLARAK ÇEKİP PDF'E KOYMA ---
-    png_logo_url = "https://raw.githubusercontent.com/tavtechnologies/assets/main/tav_logo.png"
-    try:
-        resp = requests.get(png_logo_url, timeout=4)
-        if resp.status_code == 200:
-            img_bytes = io.BytesIO(resp.content)
-            pil_img = PILImage.open(img_bytes)
-            img_stream = io.BytesIO()
-            pil_img.save(img_stream, format='PNG')
-            img_stream.seek(0)
-            
-            logo_rl = RLImage(img_stream, width=170, height=40)
-            logo_rl.hAlign = 'LEFT'
-            story.append(logo_rl)
-        else:
-            raise ValueError("Logo çekilemedi")
-    except Exception:
-        # Bağlantı yoksa kusursuz yedek metin logosu
-        logo_text_style = ParagraphStyle(
-            'LogoText',
-            fontName='Helvetica-Bold',
-            fontSize=20,
-            leading=24,
-            textColor=colors.HexColor("#1A365D")
-        )
-        story.append(Paragraph("<b>TAV Technologies</b>", logo_text_style))
+    logo_text_style = ParagraphStyle(
+        'LogoText',
+        fontName='Helvetica-Bold',
+        fontSize=20,
+        leading=24,
+        textColor=colors.HexColor("#1A365D")
+    )
 
-    story.append(Spacer(1, 12))
+    # --- SADECE ŞIK KURUMSAL METİN BAŞLIĞI ---
+    story.append(Paragraph("<b>TAV Technologies</b>", logo_text_style))
+    story.append(Spacer(1, 10))
 
     story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
     story.append(Paragraph(safe_str(f"<b>Havalimani / Proje Adi:</b> {project_name}"), normal_style))
@@ -675,6 +659,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
     rows = []
     factor = float(redundancy_pct) / 100.0
     for name, base_val, unit in items_data:
+        base_val = base_val if base_val is not None else 0
         red_val = math.ceil(base_val * factor) if base_val > 0 else 0
         tot_val = base_val + red_val
         rows.append({
@@ -686,31 +671,25 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- LOGO VE BAŞLIK ---
-logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
+# --- BAŞLIK ALANI ---
+c_lang, c_country, c_city = st.columns(3)
+with c_lang:
+    selected_lang = st.selectbox(
+        "🌐 Language / Dil / Тіл",
+        ["TR", "EN", "KK"],
+        format_func=lambda x: {"TR": "TR Türkçe", "EN": "EN English", "KK": "KK Қазақша"}[x],
+        index=0
+    )
 
-col_logo, col_title = st.columns([1.5, 3.5])
-with col_logo:
-    st.image(logo_url, width=320)
-with col_title:
-    c_lang, c_country, c_city = st.columns(3)
-    with c_lang:
-        selected_lang = st.selectbox(
-            "🌐 Language / Dil / Тіл",
-            ["TR", "EN", "KK"],
-            format_func=lambda x: {"TR": "TR Türkçe", "EN": "EN English", "KK": "KK Қазақша"}[x],
-            index=0
-        )
-    
-    t = TEXTS[selected_lang]
-    current_locations = LOCATION_DATA[selected_lang]
+t = TEXTS[selected_lang]
+current_locations = LOCATION_DATA[selected_lang]
 
-    with c_country:
-        selected_country = st.selectbox(t["country_label"], list(current_locations.keys()), index=0)
+with c_country:
+    selected_country = st.selectbox(t["country_label"], list(current_locations.keys()), index=0)
 
-    with c_city:
-        cities = current_locations.get(selected_country, [t["units"]["none"]])
-        selected_city = st.selectbox(t["city_label"], cities, index=0)
+with c_city:
+    cities = current_locations.get(selected_country, [t["units"]["none"]])
+    selected_city = st.selectbox(t["city_label"], cities, index=0)
 
 st.title(t["page_title"])
 st.caption(t["caption"])
@@ -756,30 +735,31 @@ else:
                 inputs['cctv_airport_type'] = st.radio(
                     t["cctv_scope"],
                     [t["cctv_opt1"], t["cctv_opt2"]],
+                    index=None,
                     key="cctv_type"
                 )
                 
                 c1, c2 = st.columns(2)
                 with c1:
-                    inputs['cctv_sqm'] = st.number_input(t["cctv_sqm"], min_value=1000, value=75000, step=5000, key="c_sqm")
-                    inputs['cctv_checkpoints'] = st.number_input(t["cctv_checkpoints"], min_value=1, value=20, key="c_check")
-                    inputs['cctv_control_rooms'] = st.number_input(t["cctv_cr"], min_value=1, value=1, key="c_cr")
-                    inputs['cctv_remote_views'] = st.number_input(t["cctv_rem"], min_value=0, value=4, key="c_rem")
+                    inputs['cctv_sqm'] = st.number_input(t["cctv_sqm"], min_value=0, value=None, step=1000, key="c_sqm", placeholder="Örn: 75000")
+                    inputs['cctv_checkpoints'] = st.number_input(t["cctv_checkpoints"], min_value=0, value=None, step=1, key="c_check", placeholder="Örn: 20")
+                    inputs['cctv_control_rooms'] = st.number_input(t["cctv_cr"], min_value=0, value=None, step=1, key="c_cr", placeholder="Örn: 1")
+                    inputs['cctv_remote_views'] = st.number_input(t["cctv_rem"], min_value=0, value=None, step=1, key="c_rem", placeholder="Örn: 4")
                 with c2:
-                    inputs['cctv_fence_m'] = st.number_input(t["cctv_fence"], min_value=500, value=8000, step=500, key="c_fence")
-                    inputs['cctv_operators'] = st.number_input(t["cctv_op"], min_value=1, value=6, key="c_op")
-                    inputs['cctv_storage_days'] = st.selectbox(t["cctv_days"], [30, 60, 90, 180], index=1, key="c_days")
-                    inputs['cctv_resolution'] = st.selectbox(t["cctv_res"], ["4MP", "2MP", "8MP"], key="c_res")
+                    inputs['cctv_fence_m'] = st.number_input(t["cctv_fence"], min_value=0, value=None, step=100, key="c_fence", placeholder="Örn: 8000")
+                    inputs['cctv_operators'] = st.number_input(t["cctv_op"], min_value=0, value=None, step=1, key="c_op", placeholder="Örn: 6")
+                    inputs['cctv_storage_days'] = st.selectbox(t["cctv_days"], [30, 60, 90, 180], index=None, key="c_days", placeholder="Seçiniz...")
+                    inputs['cctv_resolution'] = st.selectbox(t["cctv_res"], ["2MP", "4MP", "8MP"], index=None, key="c_res", placeholder="Seçiniz...")
 
                 st.markdown("---")
-                inputs['cctv_use_anpr'] = st.checkbox(t["cctv_anpr_chk"], value=True, key="c_anpr_chk")
+                inputs['cctv_use_anpr'] = st.checkbox(t["cctv_anpr_chk"], value=False, key="c_anpr_chk")
 
                 if inputs['cctv_use_anpr']:
                     ca1, ca2 = st.columns(2)
                     with ca1:
-                        inputs['cctv_lanes'] = st.number_input(t["cctv_lanes"], min_value=1, value=8, key="c_lanes")
+                        inputs['cctv_lanes'] = st.number_input(t["cctv_lanes"], min_value=0, value=None, step=1, key="c_lanes", placeholder="Örn: 8")
                     with ca2:
-                        inputs['cctv_anpr_speed'] = st.selectbox(t["cctv_speed"], [t["cctv_speed_low"], t["cctv_speed_high"]], key="c_speed")
+                        inputs['cctv_anpr_speed'] = st.selectbox(t["cctv_speed"], [t["cctv_speed_low"], t["cctv_speed_high"]], index=None, key="c_speed", placeholder="Seçiniz...")
                 else:
                     inputs['cctv_lanes'] = 0
 
@@ -793,14 +773,14 @@ else:
                 ac1, ac2 = st.columns(2)
                 with ac1:
                     st.markdown(f"**{t['acs_doors_sec']}**")
-                    inputs['acs_single_doors'] = st.number_input(t["acs_s_doors"], min_value=0, value=80, step=5, key="a_s_doors")
-                    inputs['acs_double_doors'] = st.number_input(t["acs_d_doors"], min_value=0, value=20, step=2, key="a_d_doors")
-                    inputs['acs_turnstiles'] = st.number_input(t["acs_turnstiles"], min_value=0, value=16, step=2, key="a_turn")
+                    inputs['acs_single_doors'] = st.number_input(t["acs_s_doors"], min_value=0, value=None, step=1, key="a_s_doors", placeholder="Örn: 80")
+                    inputs['acs_double_doors'] = st.number_input(t["acs_d_doors"], min_value=0, value=None, step=1, key="a_d_doors", placeholder="Örn: 20")
+                    inputs['acs_turnstiles'] = st.number_input(t["acs_turnstiles"], min_value=0, value=None, step=1, key="a_turn", placeholder="Örn: 16")
                 with ac2:
                     st.markdown(f"**{t['acs_users_sec']}**")
-                    inputs['acs_users'] = st.number_input(t["acs_users"], min_value=100, value=3000, step=500, key="a_users")
-                    inputs['acs_face_rec_qty'] = st.number_input(t["acs_face"], min_value=0, value=10, step=1, key="a_face_qty")
-                    inputs['acs_fingerprint_qty'] = st.number_input(t["acs_finger"], min_value=0, value=15, step=1, key="a_finger_qty")
+                    inputs['acs_users'] = st.number_input(t["acs_users"], min_value=0, value=None, step=100, key="a_users", placeholder="Örn: 3000")
+                    inputs['acs_face_rec_qty'] = st.number_input(t["acs_face"], min_value=0, value=None, step=1, key="a_face_qty", placeholder="Örn: 10")
+                    inputs['acs_fingerprint_qty'] = st.number_input(t["acs_finger"], min_value=0, value=None, step=1, key="a_finger_qty", placeholder="Örn: 15")
 
                 inputs['acs_redundancy'] = st.number_input(
                     t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="a_red"
@@ -811,10 +791,10 @@ else:
                 
                 fc1, fc2 = st.columns(2)
                 with fc1:
-                    inputs['fas_sqm'] = st.number_input(t["fas_sqm"], min_value=1000, value=75000, step=5000, key="f_sqm")
-                    inputs['fas_raised_floor'] = st.checkbox(t["fas_rf"], value=True, key="f_rf")
+                    inputs['fas_sqm'] = st.number_input(t["fas_sqm"], min_value=0, value=None, step=1000, key="f_sqm", placeholder="Örn: 75000")
+                    inputs['fas_raised_floor'] = st.checkbox(t["fas_rf"], value=False, key="f_rf")
                 with fc2:
-                    inputs['fas_beam_detectors'] = st.number_input(t["fas_beam"], min_value=0, value=6, key="f_beam")
+                    inputs['fas_beam_detectors'] = st.number_input(t["fas_beam"], min_value=0, value=None, step=1, key="f_beam", placeholder="Örn: 6")
 
                 inputs['fas_redundancy'] = st.number_input(
                     t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="f_red"
@@ -825,10 +805,10 @@ else:
                 
                 pc1, pc2 = st.columns(2)
                 with pc1:
-                    inputs['pava_sqm'] = st.number_input(t["pava_sqm"], min_value=1000, value=75000, step=5000, key="p_sqm")
-                    inputs['pava_zones'] = st.number_input(t["pava_zones"], min_value=1, value=16, step=1, key="p_zones")
+                    inputs['pava_sqm'] = st.number_input(t["pava_sqm"], min_value=0, value=None, step=1000, key="p_sqm", placeholder="Örn: 75000")
+                    inputs['pava_zones'] = st.number_input(t["pava_zones"], min_value=0, value=None, step=1, key="p_zones", placeholder="Örn: 16")
                 with pc2:
-                    inputs['pava_environment'] = st.selectbox(t["pava_env"], [t["pava_env_std"], t["pava_env_noisy"], t["pava_env_quiet"]], key="p_env")
+                    inputs['pava_environment'] = st.selectbox(t["pava_env"], [t["pava_env_std"], t["pava_env_noisy"], t["pava_env_quiet"]], index=None, key="p_env", placeholder="Seçiniz...")
 
                 inputs['pava_redundancy'] = st.number_input(
                     t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="p_red"
@@ -839,14 +819,13 @@ else:
 
     # --- HESAPLAMA MANTIĞI VE SONUÇLAR ---
     if submit_button:
-        # ZORUNLU KONTROL: Proje adı boş bırakılamaz
+        # PROJE ADI KONTROLÜ
         if not project_name or not project_name.strip():
             st.error(t["warning_no_project"])
         else:
             calculated_results = {}
             inputs_summary = {}
 
-            # ÜLKE SEÇİMİNE DUYARLI OTOMATİK SAAT DİLİMİ
             target_tz_str = COUNTRY_TIMEZONES.get(selected_country, "Europe/Istanbul")
             try:
                 user_tz = pytz.timezone(target_tz_str)
@@ -854,39 +833,48 @@ else:
                 user_tz = pytz.timezone("Europe/Istanbul")
 
             now_str = datetime.now(user_tz).strftime("%d.%m.%Y - %H:%M")
-
             display_proj_name = project_name.strip()
+
+            valid_calculation = True
 
             for sys in selected_systems:
                 # 1. CCTV HESAPLAMA
                 if t["system_names"]["CCTV"] in sys:
                     red_pct = inputs.get('cctv_redundancy', 0)
-                    sqm_per_cam = 60 if inputs.get('cctv_airport_type') == t["cctv_opt1"] else 90
-                    fence_m_per_cam = 40 if inputs.get('cctv_airport_type') == t["cctv_opt1"] else 60
+                    sqm = inputs.get('cctv_sqm') or 0
+                    fence_m = inputs.get('cctv_fence_m') or 0
+                    checkpoints = inputs.get('cctv_checkpoints') or 0
+                    lanes = inputs.get('cctv_lanes') or 0
+                    days = inputs.get('cctv_storage_days') or 60
+                    resolution = inputs.get('cctv_resolution') or "4MP"
+                    airport_type = inputs.get('cctv_airport_type') or t["cctv_opt1"]
 
-                    indoor_cams = math.ceil(inputs.get('cctv_sqm', 75000) / sqm_per_cam)
-                    fence_cams = math.ceil(inputs.get('cctv_fence_m', 8000) / fence_m_per_cam)
-                    checkpoint_cams = inputs.get('cctv_checkpoints', 20) * 4
-                    anpr_cams = inputs.get('cctv_lanes', 8) * 2 if inputs.get('cctv_use_anpr', False) else 0
+                    sqm_per_cam = 60 if airport_type == t["cctv_opt1"] else 90
+                    fence_m_per_cam = 40 if airport_type == t["cctv_opt1"] else 60
+
+                    indoor_cams = math.ceil(sqm / sqm_per_cam) if sqm > 0 else 0
+                    fence_cams = math.ceil(fence_m / fence_m_per_cam) if fence_m > 0 else 0
+                    checkpoint_cams = checkpoints * 4
+                    anpr_cams = lanes * 2 if inputs.get('cctv_use_anpr', False) else 0
 
                     total_cams = indoor_cams + fence_cams + checkpoint_cams + anpr_cams
                     
                     bitrate_map = {"2MP": 3, "4MP": 5, "8MP": 10}
-                    mbps_per_cam = bitrate_map.get(inputs.get('cctv_resolution', "4MP"), 5)
-                    storage_tb = math.ceil((total_cams * mbps_per_cam * 3600 * 24 * inputs.get('cctv_storage_days', 60)) / (8 * 1024 * 1024))
+                    mbps_per_cam = bitrate_map.get(resolution, 5)
+                    storage_tb = math.ceil((total_cams * mbps_per_cam * 3600 * 24 * days) / (8 * 1024 * 1024)) if total_cams > 0 else 0
 
-                    poe_switches_24p = math.ceil(total_cams / 20)
+                    poe_switches_24p = math.ceil(total_cams / 20) if total_cams > 0 else 0
 
                     inputs_summary[t["system_names"]["CCTV"]] = pd.DataFrame([
-                        {t["col_input_param"]: t["cctv_scope"], t["col_input_val"]: inputs.get('cctv_airport_type'), t["col_unit"]: t["units"]["none"]},
-                        {t["col_input_param"]: t["cctv_sqm"], t["col_input_val"]: inputs.get('cctv_sqm'), t["col_unit"]: t["units"]["m2"]},
-                        {t["col_input_param"]: t["cctv_checkpoints"], t["col_input_val"]: inputs.get('cctv_checkpoints'), t["col_unit"]: t["units"]["point"]},
-                        {t["col_input_param"]: t["cctv_fence"], t["col_input_val"]: inputs.get('cctv_fence_m'), t["col_unit"]: t["units"]["meter"]},
-                        {t["col_input_param"]: t["cctv_lanes"], t["col_input_val"]: inputs.get('cctv_lanes'), t["col_unit"]: t["units"]["lane"]},
-                        {t["col_input_param"]: t["cctv_cr"], t["col_input_val"]: inputs.get('cctv_control_rooms'), t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["cctv_op"], t["col_input_val"]: inputs.get('cctv_operators'), t["col_unit"]: t["units"]["desk"]},
-                        {t["col_input_param"]: t["cctv_days"], t["col_input_val"]: inputs.get('cctv_storage_days'), t["col_unit"]: t["units"]["day"]},
-                        {t["col_input_param"]: t["cctv_res"], t["col_input_val"]: inputs.get('cctv_resolution'), t["col_unit"]: t["units"]["none"]},
+                        {t["col_input_param"]: t["cctv_scope"], t["col_input_val"]: airport_type, t["col_unit"]: t["units"]["none"]},
+                        {t["col_input_param"]: t["cctv_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
+                        {t["col_input_param"]: t["cctv_checkpoints"], t["col_input_val"]: checkpoints, t["col_unit"]: t["units"]["point"]},
+                        {t["col_input_param"]: t["cctv_fence"], t["col_input_val"]: fence_m, t["col_unit"]: t["units"]["meter"]},
+                        {t["col_input_param"]: t["cctv_lanes"], t["col_input_val"]: lanes, t["col_unit"]: t["units"]["lane"]},
+                        {t["col_input_param"]: t["cctv_cr"], t["col_input_val"]: inputs.get('cctv_control_rooms') or 0, t["col_unit"]: t["units"]["pcs"]},
+                        {t["col_input_param"]: t["cctv_op"], t["col_input_val"]: inputs.get('cctv_operators') or 0, t["col_unit"]: t["units"]["desk"]},
+                        {t["col_input_param"]: t["cctv_days"], t["col_input_val"]: days, t["col_unit"]: t["units"]["day"]},
+                        {t["col_input_param"]: t["cctv_res"], t["col_input_val"]: resolution, t["col_unit"]: t["units"]["none"]},
                         {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
                     ])
 
@@ -906,28 +894,35 @@ else:
                 # 2. ACS HESAPLAMA
                 elif t["system_names"]["ACS"] in sys:
                     red_pct = inputs.get('acs_redundancy', 0)
-                    total_doors = inputs.get('acs_single_doors', 80) + inputs.get('acs_double_doors', 20)
-                    readers = (inputs.get('acs_single_doors', 80) * 2) + (inputs.get('acs_double_doors', 20) * 2) + (inputs.get('acs_turnstiles', 16) * 2)
-                    controllers = math.ceil((total_doors + inputs.get('acs_turnstiles', 16)) / 4)
+                    single_doors = inputs.get('acs_single_doors') or 0
+                    double_doors = inputs.get('acs_double_doors') or 0
+                    turnstiles = inputs.get('acs_turnstiles') or 0
+                    users = inputs.get('acs_users') or 0
+                    face_qty = inputs.get('acs_face_rec_qty') or 0
+                    finger_qty = inputs.get('acs_fingerprint_qty') or 0
+
+                    total_doors = single_doors + double_doors
+                    readers = (single_doors * 2) + (double_doors * 2) + (turnstiles * 2)
+                    controllers = math.ceil((total_doors + turnstiles) / 4) if (total_doors + turnstiles) > 0 else 0
 
                     inputs_summary[t["system_names"]["ACS"]] = pd.DataFrame([
-                        {t["col_input_param"]: t["acs_s_doors"], t["col_input_val"]: inputs.get('acs_single_doors'), t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["acs_d_doors"], t["col_input_val"]: inputs.get('acs_double_doors'), t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["acs_turnstiles"], t["col_input_val"]: inputs.get('acs_turnstiles'), t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["acs_users"], t["col_input_val"]: inputs.get('acs_users'), t["col_unit"]: t["units"]["user"]},
-                        {t["col_input_param"]: t["acs_face"], t["col_input_val"]: inputs.get('acs_face_rec_qty'), t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["acs_finger"], t["col_input_val"]: inputs.get('acs_fingerprint_qty'), t["col_unit"]: t["units"]["pcs"]},
+                        {t["col_input_param"]: t["acs_s_doors"], t["col_input_val"]: single_doors, t["col_unit"]: t["units"]["pcs"]},
+                        {t["col_input_param"]: t["acs_d_doors"], t["col_input_val"]: double_doors, t["col_unit"]: t["units"]["pcs"]},
+                        {t["col_input_param"]: t["acs_turnstiles"], t["col_input_val"]: turnstiles, t["col_unit"]: t["units"]["pcs"]},
+                        {t["col_input_param"]: t["acs_users"], t["col_input_val"]: users, t["col_unit"]: t["units"]["user"]},
+                        {t["col_input_param"]: t["acs_face"], t["col_input_val"]: face_qty, t["col_unit"]: t["units"]["pcs"]},
+                        {t["col_input_param"]: t["acs_finger"], t["col_input_val"]: finger_qty, t["col_unit"]: t["units"]["pcs"]},
                         {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
                     ])
 
                     items_data = [
                         (t["acs_out"]["doors"], total_doors, t["units"]["pcs"]),
-                        (t["acs_out"]["turnstiles"], inputs.get('acs_turnstiles', 16), t["units"]["pcs"]),
+                        (t["acs_out"]["turnstiles"], turnstiles, t["units"]["pcs"]),
                         (t["acs_out"]["readers"], readers, t["units"]["pcs"]),
-                        (t["acs_out"]["face"], inputs.get('acs_face_rec_qty', 10), t["units"]["pcs"]),
-                        (t["acs_out"]["finger"], inputs.get('acs_fingerprint_qty', 15), t["units"]["pcs"]),
+                        (t["acs_out"]["face"], face_qty, t["units"]["pcs"]),
+                        (t["acs_out"]["finger"], finger_qty, t["units"]["pcs"]),
                         (t["acs_out"]["controllers"], controllers, t["units"]["pcs"]),
-                        (t["acs_out"]["users"], inputs.get('acs_users', 3000), t["units"]["user"])
+                        (t["acs_out"]["users"], users, t["units"]["user"])
                     ]
 
                     calculated_results[t["system_names"]["ACS"]] = create_output_df(items_data, red_pct, t)
@@ -935,26 +930,28 @@ else:
                 # 3. FAS HESAPLAMA
                 elif t["system_names"]["FAS"] in sys:
                     red_pct = inputs.get('fas_redundancy', 0)
-                    sqm = inputs.get('fas_sqm', 75000)
-                    base_detectors = math.ceil(sqm / 60)
-                    if inputs.get('fas_raised_floor', True):
+                    sqm = inputs.get('fas_sqm') or 0
+                    beam_qty = inputs.get('fas_beam_detectors') or 0
+
+                    base_detectors = math.ceil(sqm / 60) if sqm > 0 else 0
+                    if inputs.get('fas_raised_floor', False) and base_detectors > 0:
                         base_detectors = math.ceil(base_detectors * 1.5)
 
-                    manual_call_points = math.ceil(sqm / 500)
-                    sounders_flashing = math.ceil(sqm / 400)
-                    loops = math.ceil(base_detectors / 200)
-                    panels = math.ceil(loops / 8)
+                    manual_call_points = math.ceil(sqm / 500) if sqm > 0 else 0
+                    sounders_flashing = math.ceil(sqm / 400) if sqm > 0 else 0
+                    loops = math.ceil(base_detectors / 200) if base_detectors > 0 else 0
+                    panels = math.ceil(loops / 8) if loops > 0 else 0
 
                     inputs_summary[t["system_names"]["FAS"]] = pd.DataFrame([
-                        {t["col_input_param"]: t["fas_sqm"], t["col_input_val"]: inputs.get('fas_sqm'), t["col_unit"]: t["units"]["m2"]},
+                        {t["col_input_param"]: t["fas_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
                         {t["col_input_param"]: t["fas_rf"], t["col_input_val"]: t["units"]["yes"] if inputs.get('fas_raised_floor') else t["units"]["no"], t["col_unit"]: t["units"]["none"]},
-                        {t["col_input_param"]: t["fas_beam"], t["col_input_val"]: inputs.get('fas_beam_detectors'), t["col_unit"]: t["units"]["pair"]},
+                        {t["col_input_param"]: t["fas_beam"], t["col_input_val"]: beam_qty, t["col_unit"]: t["units"]["pair"]},
                         {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
                     ])
 
                     items_data = [
                         (t["fas_out"]["detectors"], base_detectors, t["units"]["pcs"]),
-                        (t["fas_out"]["beam"], inputs.get('fas_beam_detectors', 6), t["units"]["pair"]),
+                        (t["fas_out"]["beam"], beam_qty, t["units"]["pair"]),
                         (t["fas_out"]["buttons"], manual_call_points, t["units"]["pcs"]),
                         (t["fas_out"]["sounders"], sounders_flashing, t["units"]["pcs"]),
                         (t["fas_out"]["loops"], loops, t["units"]["loop"]),
@@ -966,16 +963,19 @@ else:
                 # 4. PA/VA HESAPLAMA
                 elif t["system_names"]["PA/VA"] in sys:
                     red_pct = inputs.get('pava_redundancy', 0)
-                    sqm = inputs.get('pava_sqm', 75000)
-                    speakers = math.ceil(sqm / 50)
-                    watts_per_spk = 6 if inputs.get('pava_environment') == t["pava_env_noisy"] else 3
-                    total_power_watts = math.ceil(speakers * watts_per_spk * 1.25)
-                    amplifiers = math.ceil(total_power_watts / 1000)
+                    sqm = inputs.get('pava_sqm') or 0
+                    zones = inputs.get('pava_zones') or 0
+                    env = inputs.get('pava_environment') or t["pava_env_std"]
+
+                    speakers = math.ceil(sqm / 50) if sqm > 0 else 0
+                    watts_per_spk = 6 if env == t["pava_env_noisy"] else 3
+                    total_power_watts = math.ceil(speakers * watts_per_spk * 1.25) if speakers > 0 else 0
+                    amplifiers = math.ceil(total_power_watts / 1000) if total_power_watts > 0 else 0
 
                     inputs_summary[t["system_names"]["PA/VA"]] = pd.DataFrame([
-                        {t["col_input_param"]: t["pava_sqm"], t["col_input_val"]: inputs.get('pava_sqm'), t["col_unit"]: t["units"]["m2"]},
-                        {t["col_input_param"]: t["pava_zones"], t["col_input_val"]: inputs.get('pava_zones'), t["col_unit"]: t["units"]["zone"]},
-                        {t["col_input_param"]: t["pava_env"], t["col_input_val"]: inputs.get('pava_environment'), t["col_unit"]: t["units"]["none"]},
+                        {t["col_input_param"]: t["pava_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
+                        {t["col_input_param"]: t["pava_zones"], t["col_input_val"]: zones, t["col_unit"]: t["units"]["zone"]},
+                        {t["col_input_param"]: t["pava_env"], t["col_input_val"]: env, t["col_unit"]: t["units"]["none"]},
                         {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
                     ])
 
@@ -983,7 +983,7 @@ else:
                         (t["pava_out"]["speakers"], speakers, t["units"]["pcs"]),
                         (t["pava_out"]["power"], total_power_watts, t["units"]["watt"]),
                         (t["pava_out"]["amps"], amplifiers, t["units"]["pcs"]),
-                        (t["pava_out"]["zones"], inputs.get('pava_zones', 16), t["units"]["zone"])
+                        (t["pava_out"]["zones"], zones, t["units"]["zone"])
                     ]
 
                     calculated_results[t["system_names"]["PA/VA"]] = create_output_df(items_data, red_pct, t)
