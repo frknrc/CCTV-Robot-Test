@@ -35,6 +35,21 @@ st.markdown(hide_st_style, unsafe_allow_html=True)
 # --- KULLANICININ TARAYICI SAAT DİLİMİNİ OTOMATİK YAKALAMA ---
 user_timezone_str = st_javascript("Intl.DateTimeFormat().resolvedOptions().timeZone")
 
+# --- ÜLKE VE ŞEHİR VERİSİ ---
+LOCATION_DATA = {
+    "Türkiye": ["İstanbul", "Ankara", "İzmir", "Antalya", "Bursa", "Adana", "Gaziantep", "Trabzon", "Muğla", "Diğer"],
+    "Kazakistan": ["Astana", "Almatı", "Çimkent", "Aktau", "Atırau", "Karağandı", "Aktöbe", "Diğer"],
+    "Azerbaycan": ["Bakü", "Gence", "Sumgayıt", "Hocalı", "Gence", "Diğer"],
+    "Gürcistan": ["Tiflis", "Batum", "Kutais", "Diğer"],
+    "Suudi Arabistan": ["Riyad", "Cidde", "Mekke", "Medine", "Dammam", "Diğer"],
+    "Birleşik Arap Emirlikleri": ["Dubai", "Abu Dabi", "Şarja", "Diğer"],
+    "Katar": ["Doha", "Al Rayyan", "Diğer"],
+    "Özbekistan": ["Taşkent", "Semerkand", "Buhara", "Diğer"],
+    "Kırgızistan": ["Bişkek", "Oş", "Diğer"],
+    "Almanya": ["Berlin", "Münih", "Frankfurt", "Hamburg", "Diğer"],
+    "Diğer / Other": ["Diğer / Other"]
+}
+
 # --- ÇEVİRİ SÖZLÜĞÜ (TR / EN / KK) ---
 TEXTS = {
     "TR": {
@@ -42,6 +57,8 @@ TEXTS = {
         "caption": "Lütfen projenize ait verileri girerek donanım ve altyapı ihtiyaç raporunu oluşturun.",
         "project_name_label": "📌 Havalimanı / Proje Adı",
         "project_name_default": "Örnek Havalimanı Terminal Projesi",
+        "country_label": "🌍 Ülke",
+        "city_label": "🏙️ Şehir",
         "select_systems_title": "🎯 Planlanacak Zayıf Akım Sistemlerini Seçiniz",
         "select_systems_label": "İhtiyaç duyulan sistemleri işaretleyiniz:",
         "warning_no_system": "⚠ Lütfen devam etmek için en az bir zayıf akım sistemi seçiniz.",
@@ -49,6 +66,7 @@ TEXTS = {
         "report_success": "✅ **{project}** İçin Seçilen Sistem Planlama Raporu Başarıyla Hesaplandı!",
         "download_section": "📥 Rapor Çıktısı Alın",
         "report_date_label": "Rapor Tarihi",
+        "location_label": "Konum",
         "inputs_header": "📋 Girdi Parametreleri (Tasarım Kriterleri)",
         "outputs_header": "📊 Hesaplanan İhtiyaçlar (Sistem Çıktıları)",
         "cctv_title": "🎥 CCTV Kamera Güvenlik Sistemi",
@@ -100,6 +118,8 @@ TEXTS = {
         "caption": "Please enter your project details to generate the hardware and infrastructure requirements report.",
         "project_name_label": "📌 Airport / Project Name",
         "project_name_default": "Sample Airport Terminal Project",
+        "country_label": "🌍 Country",
+        "city_label": "🏙️ City",
         "select_systems_title": "🎯 Select ELV Systems to Plan",
         "select_systems_label": "Select the required systems:",
         "warning_no_system": "⚠ Please select at least one ELV system to proceed.",
@@ -107,6 +127,7 @@ TEXTS = {
         "report_success": "✅ Planning report successfully generated for **{project}**!",
         "download_section": "📥 Download Report",
         "report_date_label": "Report Date",
+        "location_label": "Location",
         "inputs_header": "📋 Input Parameters (Design Criteria)",
         "outputs_header": "📊 Calculated Requirements (System Outputs)",
         "cctv_title": "🎥 CCTV Surveillance System",
@@ -158,6 +179,8 @@ TEXTS = {
         "caption": "Жабдық пен инфрақұрылым талаптарының есебін жасау үшін жоба мәліметтерін енгізіңіз.",
         "project_name_label": "📌 Әуежай / Жоба атауы",
         "project_name_default": "Әуежай терминалының үлгілік жобасы",
+        "country_label": "🌍 Ел",
+        "city_label": "🏙️ Қала",
         "select_systems_title": "🎯 Жоспарланатын әлсіз тоқ жүйелерін таңдаңыз",
         "select_systems_label": "Қажетті жүйелерді белгілеңіз:",
         "warning_no_system": "⚠ Жалғастыру үшін кем дегенде бір әлсіз тоқ жүйесін таңдаңыз.",
@@ -165,6 +188,7 @@ TEXTS = {
         "report_success": "✅ **{project}** жобасы үшін жоспарлау есебі сәтті есептелді!",
         "download_section": "📥 Есепті жүктеп алу",
         "report_date_label": "Есеп күні",
+        "location_label": "Орналасқан жері",
         "inputs_header": "📋 Енгізілген параметрлер (Жобалау критерийлері)",
         "outputs_header": "📊 Есептелген қажеттіліктер (Жүйе нәтижелері)",
         "cctv_title": "🎥 CCTV Бейнебақылау жүйесі",
@@ -214,7 +238,7 @@ TEXTS = {
 }
 
 # --- PDF OLUŞTURMA FONKSİYONU ---
-def generate_pdf(project_name, results, inputs_summary, report_datetime_str, t_labels):
+def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
     story = []
@@ -281,6 +305,7 @@ def generate_pdf(project_name, results, inputs_summary, report_datetime_str, t_l
 
     story.append(Paragraph(safe_str("Zayıf Akım Sistem Planlama Raporu"), title_style))
     story.append(Paragraph(safe_str(f"<b>Proje Adı:</b> {project_name}"), normal_style))
+    story.append(Paragraph(safe_str(f"<b>{t_labels['location_label']}:</b> {country} / {city}"), normal_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['report_date_label']}:</b> {report_datetime_str}"), normal_style))
     story.append(Spacer(1, 15))
 
@@ -338,18 +363,6 @@ def generate_pdf(project_name, results, inputs_summary, report_datetime_str, t_l
     buffer.seek(0)
     return buffer.getvalue()
 
-# --- DİL SEÇİMİ ---
-col_lang, col_blank = st.columns([1.5, 3.5])
-with col_lang:
-    selected_lang = st.selectbox(
-        "🌐 Language / Dil / Тіл",
-        ["TR", "EN", "KK"],
-        format_func=lambda x: {"TR": "🇹🇷 Türkçe", "EN": "🇬🇧 English", "KK": "🇰🇿 Қазақша"}[x],
-        index=0
-    )
-
-t = TEXTS[selected_lang]
-
 # --- LOGO VE BAŞLIK ---
 logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
 
@@ -357,8 +370,27 @@ col_logo, col_title = st.columns([1.5, 3.5])
 with col_logo:
     st.image(logo_url, width=320)
 with col_title:
-    st.title(t["page_title"])
-    st.caption(t["caption"])
+    # --- DİL VE KONUM SEÇİM ALANI ---
+    c_lang, c_country, c_city = st.columns(3)
+    with c_lang:
+        selected_lang = st.selectbox(
+            "🌐 Language / Dil / Тіл",
+            ["TR", "EN", "KK"],
+            format_func=lambda x: {"TR": "🇹🇷 Türkçe", "EN": "🇬🇧 English", "KK": "🇰🇿 Қазақша"}[x],
+            index=0
+        )
+    
+    t = TEXTS[selected_lang]
+
+    with c_country:
+        selected_country = st.selectbox(t["country_label"], list(LOCATION_DATA.keys()), index=0)
+
+    with c_city:
+        cities = LOCATION_DATA.get(selected_country, ["Diğer"])
+        selected_city = st.selectbox(t["city_label"], cities, index=0)
+
+st.title(t["page_title"])
+st.caption(t["caption"])
 
 st.markdown("---")
 
@@ -593,13 +625,15 @@ else:
         st.session_state['results'] = calculated_results
         st.session_state['inputs_summary'] = inputs_summary
         st.session_state['project_name'] = project_name
+        st.session_state['country'] = selected_country
+        st.session_state['city'] = selected_city
         st.session_state['selected_systems'] = selected_systems
         st.session_state['report_datetime'] = now_str
 
     # --- EKRANA BASMA VE İNDİRME BUTONLARI ---
     if 'results' in st.session_state and st.session_state['results']:
         st.success(t["report_success"].format(project=st.session_state['project_name']))
-        st.caption(f"📅 {t['report_date_label']}: {st.session_state['report_datetime']}")
+        st.caption(f"📍 **{t['location_label']}:** {st.session_state['country']} / {st.session_state['city']} | 📅 **{t['report_date_label']}:** {st.session_state['report_datetime']}")
 
         res_tabs = st.tabs([f"📊 {s}" for s in st.session_state['selected_systems']])
 
@@ -627,6 +661,7 @@ else:
         with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
             info_df = pd.DataFrame([
                 {"Parametre": t["project_name_label"], "Değer": st.session_state['project_name']},
+                {"Parametre": t["location_label"], "Değer": f"{st.session_state['country']} / {st.session_state['city']}"},
                 {"Parametre": t["report_date_label"], "Değer": st.session_state['report_datetime']}
             ])
             info_df.to_excel(writer, sheet_name="Genel Bilgi", index=False)
@@ -644,6 +679,8 @@ else:
         # PDF OLUŞTURMA
         pdf_data = generate_pdf(
             st.session_state['project_name'], 
+            st.session_state['country'],
+            st.session_state['city'],
             st.session_state['results'], 
             st.session_state['inputs_summary'],
             st.session_state['report_datetime'],
