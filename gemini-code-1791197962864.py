@@ -148,4 +148,40 @@ else:
                     inputs['pava_sqm'] = st.number_input("Anons Yapılacak Toplam Kapalı Alan (m²)", min_value=1000, value=75000, step=5000, key="p_sqm")
                     inputs['pava_zones'] = st.number_input("Bağımsız Anons Bölgesi (Zone) Sayısı", min_value=1, value=16, step=1, key="p_zones")
                 with pc2:
-                    inputs['pava_environment'] = st.selectbox("Baskın Ortam Tipi & Gürültü Seviyesi", ["Standart Terminal Alanı (70-75 dB)", "Gürültülü Otopark / Teknik Alan (80-85 dB)", "Sessiz Ofis / Yönetim Alanı (60 dB)"], key="p
+                    inputs['pava_environment'] = st.selectbox("Baskın Ortam Tipi & Gürültü Seviyesi", ["Standart Terminal Alanı (70-75 dB)", "Gürültülü Otopark / Teknik Alan (80-85 dB)", "Sessiz Ofis / Yönetim Alanı (60 dB)"], key="p_env")
+
+    st.markdown("---")
+    submit_button = st.button("🚀 Tüm Seçili Sistemlerin İhtiyaç Raporunu Oluştur", use_container_width=True, type="primary")
+
+    # --- HESAPLAMA VE SONUÇ EKRANI ---
+    if submit_button:
+        st.success(f"✅ **{project_name}** İçin Seçilen Sistem Planlama Raporu Başarıyla Hesaplandı!")
+        
+        now_str = datetime.now().strftime("%d.%m.%Y %H:%M")
+        excel_rows = [
+            {"Sistem": "GENEL BİLGİ", "Bileşen / Tanım": "Proje Adı", "Değer / Miktar": project_name, "Birim": "-"},
+            {"Sistem": "GENEL BİLGİ", "Bileşen / Tanım": "Oluşturulma Tarihi", "Değer / Miktar": now_str, "Birim": "-"}
+        ]
+
+        res_tabs = st.tabs([f"📊 {s}" for s in selected_systems])
+
+        for idx, sys in enumerate(selected_systems):
+            with res_tabs[idx]:
+                
+                # --- CCTV ---
+                if "CCTV" in sys:
+                    sqm_per_cam = 60 if "Uluslararası" in inputs['cctv_airport_type'] else 90
+                    fence_m_per_cam = 40 if "Uluslararası" in inputs['cctv_airport_type'] else 60
+                    cam_per_check = 3 if "Uluslararası" in inputs['cctv_airport_type'] else 2
+
+                    terminal_cams = math.ceil(inputs['cctv_sqm'] / sqm_per_cam)
+                    checkpoint_cams = inputs['cctv_checkpoints'] * cam_per_check
+                    fence_cams = math.ceil(inputs['cctv_fence_m'] / fence_m_per_cam)
+                    anpr_cams = (inputs['cctv_lanes'] * 2) if inputs['cctv_use_anpr'] else 0
+
+                    fence_thermal = math.ceil(fence_cams * 0.15)
+                    fence_fixed = fence_cams - fence_thermal
+                    total_cams = terminal_cams + checkpoint_cams + fence_cams + anpr_cams
+
+                    tb_per_cam_day = 0.02 if "4MP" in inputs['cctv_resolution'] else (0.015 if "2MP" in inputs['cctv_resolution'] else 0.035)
+                    total_storage_tb = math.
