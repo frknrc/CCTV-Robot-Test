@@ -8,8 +8,8 @@ from openpyxl.utils import get_column_letter
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
-    page_title="CCTV Sistem Planlama Sihirbazı",
-    page_icon="🎥",
+    page_title="Zayıf Akım Sistem Planlama Sihirbazı",
+    page_icon="🏢",
     layout="wide"
 )
 
@@ -30,243 +30,292 @@ col_logo, col_title = st.columns([1.5, 3.5])
 with col_logo:
     st.image(logo_url, width=320)
 with col_title:
-    st.title("CCTV Sistem Planlama Sihirbazı")
-    st.caption("Lütfen projenize ait verileri girerek donanım ve depolama ihtiyaç raporunu oluşturun.")
+    st.title("Zayıf Akım Sistem Planlama Sihirbazı")
+    st.caption("Lütfen projenize ait verileri girerek donanım ve altyapı ihtiyaç raporunu oluşturun.")
 
 st.markdown("---")
 
-# --- MÜŞTERİNİN KARŞISINA ÇIKACAK ADIM ADIM FORM ---
-with st.form("cctv_formu"):
-    
-    st.subheader("📌 Proje Kimliği")
-    project_name = st.text_input("Havalimanı / Proje Adı", value="Örnek Havalimanı Terminal Projesi", help="Rapor başlığında yer alacaktır.")
-    
-    st.markdown("---")
-    st.subheader("📝 Adım 1: Havalimanı Tipi ve Sınıfı")
-    airport_type = st.radio(
-        "Havalimanı Kapsamını Seçiniz:",
-        ["Uluslararası Transit Hub (Yüksek Güvenlik / Yoğun Yolcu)", "Bölgesel / Orta Ölçekli Havalimanı"]
-    )
-    
-    st.markdown("---")
-    st.subheader("📐 Adım 2: Saha Ölçüm Bilgileri")
-    col1, col2 = st.columns(2)
-    with col1:
-        sqm = st.number_input("Terminal Toplam Kapalı Alanı (m²)", min_value=1000, value=75000, step=5000)
-        checkpoints = st.number_input("Pasaport & Güvenlik Kontrol Noktası Sayısı", min_value=1, value=20)
-    with col2:
-        fence_m = st.number_input("Çevre Çit / Dış Sınır Uzunluğu (Metre)", min_value=500, value=8000, step=500)
+# --- PROJE BİLGİSİ VE SİSTEM SEÇİMİ ---
+project_name = st.text_input("📌 Havalimanı / Proje Adı", value="Örnek Havalimanı Terminal Projesi")
 
-    st.markdown("---")
-    st.subheader("🚘 Adım 3: Plaka Tanıma Sistemi (ANPR) Tercihi")
-    use_anpr = st.checkbox("Otopark ve Nizamiye Girişlerinde Plaka Tanıma (ANPR) İstiyorum", value=True)
-    
-    anpr_cams = 0
-    parking_lanes = 0
-    anpr_speed = "Düşük Hız (Nizamiye / Otopark Bariyer)"
-    
-    if use_anpr:
-        st.info("ℹ️ Plaka Tanıma Sistemi için ek parametreleri giriniz:")
-        col_anpr1, col_anpr2 = st.columns(2)
-        with col_anpr1:
-            parking_lanes = st.number_input("Toplam Araç Giriş - Çıkış Şerit Sayısı", min_value=1, value=8, step=1)
-        with col_anpr2:
-            anpr_speed = st.selectbox("Araç Geçiş Hız Tipi", ["Düşük Hız (Nizamiye / Otopark Bariyer)", "Yüksek Hız (Ana Yol / VIP Giriş)"])
+st.subheader("🎯 Planlanacak Zayıf Akım Sistemlerini Seçiniz")
+selected_systems = st.multiselect(
+    "İhtiyaç duyulan sistemleri işaretleyiniz:",
+    ["CCTV (Kamera Güvenlik)", "ACS (Kartlı Geçiş & Turnike)", "FAS (Yangın Algılama)", "PA/VA (Anons & Seslendirme)"],
+    default=["CCTV (Kamera Güvenlik)", "ACS (Kartlı Geçiş & Turnike)"]
+)
+
+st.markdown("---")
+
+if not selected_systems:
+    st.warning("⚠️ Lütfen devam etmek için en az bir zayıf akım sistemi seçiniz.")
+else:
+    with st.form("main_system_form"):
+        # Seçilen sistemlerin sorularını ayrı sekmelerde göster
+        system_tabs = st.tabs(selected_systems)
         
-        # ANPR kamera sayısı hesaplama (Şerit başına çift yönlü/yedekli)
-        anpr_cams = parking_lanes * 2
+        # Soru Değişkenleri Tanımları
+        # CCTV
+        cctv_airport_type = "Uluslararası Transit Hub (Yüksek Güvenlik / Yoğun Yolcu)"
+        cctv_sqm = 75000
+        cctv_checkpoints = 20
+        cctv_fence_m = 8000
+        cctv_use_anpr = False
+        cctv_lanes = 0
+        cctv_anpr_speed = "Düşük Hız (Nizamiye / Otopark Bariyer)"
+        cctv_control_rooms = 1
+        cctv_operators = 6
+        cctv_remote_views = 4
+        cctv_storage_days = 60
+        cctv_resolution = "4MP (Önerilen / Optimal)"
 
-    st.markdown("---")
-    st.subheader("🖥️ Adım 4: Kontrol Odası ve İzleme Noktaları")
-    col_obs1, col_obs2 = st.columns(2)
-    with col_obs1:
-        control_rooms = st.number_input("Ana Kontrol Odası (MOC) Sayısı", min_value=1, value=1)
-        active_operators = st.number_input("Vardiyadaki Aktif Operatör / Masa Sayısı", min_value=1, value=6)
-    with col_obs2:
-        remote_view_points = st.number_input("Uzak İzleme Noktası Sayısı (Amir/Yönetici/Emniyet)", min_value=0, value=4)
+        # ACS
+        acs_doors = 100
+        acs_turnstiles = 12
+        acs_users = 2500
+        acs_biometric = False
 
-    st.markdown("---")
-    st.subheader("⚙️ Adım 5: Kayıt ve Detay Beklentileri")
-    col3, col4 = st.columns(2)
-    with col3:
-        storage_days = st.selectbox("İstenen Geriye Dönük Kayıt Saklama Süresi (Gün)", [30, 60, 90, 180], index=1)
-    with col4:
-        resolution = st.selectbox("Tercih Edilen Kamera Kalite Standardı", ["4MP (Önerilen / Optimal)", "2MP (Full HD - Standart)", "8MP (4K - Yüksek Detay)"])
+        # FAS
+        fas_sqm = 75000
+        fas_raised_floor = True
+        fas_beam_detectors = 4
 
-    st.markdown("---")
-    submit_button = st.form_submit_button("🚀 Tasarımı ve İhtiyaç Raporunu Oluştur", use_container_width=True)
+        # PA/VA
+        pava_zones = 16
+        pava_sqm = 75000
+        pava_environment = "Standart Terminal Alanı (70-75 dB)"
 
-# --- MÜŞTERİ BUTONA BASTIĞINDA ÇIKACAK SONUÇ EKRANI ---
-if submit_button:
-    # Katsayı Hesaplamaları
-    if "Uluslararası" in airport_type:
-        sqm_per_cam, fence_m_per_cam, cam_per_check = 60, 40, 3
-    else:
-        sqm_per_cam, fence_m_per_cam, cam_per_check = 90, 60, 2
+        for i, sys in enumerate(selected_systems):
+            with system_tabs[i]:
+                # --- 1. CCTV SİSTEMİ ---
+                if "CCTV" in sys:
+                    st.markdown("### 🎥 CCTV Kamera Güvenlik Sistemi")
+                    cctv_airport_type = st.radio(
+                        "Havalimanı Kapsamı:",
+                        ["Uluslararası Transit Hub (Yüksek Güvenlik / Yoğun Yolcu)", "Bölgesel / Orta Ölçekli Havalimanı"],
+                        key="cctv_type"
+                    )
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        cctv_sqm = st.number_input("Terminal Kapalı Alanı (m²)", min_value=1000, value=75000, step=5000, key="c_sqm")
+                        cctv_checkpoints = st.number_input("Pasaport & Güvenlik Kontrol Noktası", min_value=1, value=20, key="c_check")
+                    with c2:
+                        cctv_fence_m = st.number_input("Çevre Çit Uzunluğu (Metre)", min_value=500, value=8000, step=500, key="c_fence")
+                        cctv_use_anpr = st.checkbox("Plaka Tanıma Sistemi (ANPR) İstiyorum", value=True, key="c_anpr_chk")
 
-    terminal_cams = math.ceil(sqm / sqm_per_cam)
-    checkpoint_cams = checkpoints * cam_per_check
-    fence_cams = math.ceil(fence_m / fence_m_per_cam)
+                    if cctv_use_anpr:
+                        ca1, ca2 = st.columns(2)
+                        with ca1:
+                            cctv_lanes = st.number_input("ANPR Giriş/Çıkış Şerit Sayısı", min_value=1, value=8, key="c_lanes")
+                        with ca2:
+                            cctv_anpr_speed = st.selectbox("Geçiş Hız Tipi", ["Düşük Hız (Nizamiye / Otopark Bariyer)", "Yüksek Hız (Ana Yol / VIP Giriş)"], key="c_speed")
 
-    fence_thermal_ptz = math.ceil(fence_cams * 0.15)
-    fence_fixed = fence_cams - fence_thermal_ptz
+                    c3, c4 = st.columns(2)
+                    with c3:
+                        cctv_control_rooms = st.number_input("Ana Kontrol Odası Sayısı", min_value=1, value=1, key="c_cr")
+                        cctv_operators = st.number_input("Vardiyadaki Aktif Operatör Masa Sayısı", min_value=1, value=6, key="c_op")
+                    with c4:
+                        cctv_remote_views = st.number_input("Uzak İzleme Noktası Sayısı", min_value=0, value=4, key="c_rem")
+                        cctv_storage_days = st.selectbox("Kayıt Saklama Süresi (Gün)", [30, 60, 90, 180], index=1, key="c_days")
+                        cctv_resolution = st.selectbox("Kamera Kalite Standardı", ["4MP (Önerilen / Optimal)", "2MP (Full HD - Standart)", "8MP (4K - Yüksek Detay)"], key="c_res")
 
-    total_cams = terminal_cams + checkpoint_cams + fence_cams + anpr_cams
+                # --- 2. ACS SİSTEMİ ---
+                elif "ACS" in sys:
+                    st.markdown("### 🚪 Kartlı Geçiş ve Turnike Sistemi (ACS)")
+                    ac1, ac2 = st.columns(2)
+                    with ac1:
+                        acs_doors = st.number_input("Kontrollü Geçiş Kapı Sayısı", min_value=1, value=120, step=5, key="a_doors")
+                        acs_turnstiles = st.number_input("Geçiş Turnikesi Sayısı (Personel / Yolcu)", min_value=0, value=16, step=2, key="a_turn")
+                    with ac2:
+                        acs_users = st.number_input("Sisteme Tanımlanacak Toplam Kartlı Kullanıcı Sayısı", min_value=100, value=3000, step=500, key="a_users")
+                        acs_biometric = st.checkbox("Yüksek Güvenlikli Kapılarda Biyometrik Tanıma (Yüz/Parmak İzi) Olsun", value=True, key="a_bio")
 
-    # Depolama & Sunucu Hesaplama
-    tb_per_cam_day = 0.02 if "4MP" in resolution else (0.015 if "2MP" in resolution else 0.035)
-    total_storage_tb = math.ceil(total_cams * tb_per_cam_day * storage_days)
-    recording_servers = math.ceil(total_cams / 64)
-    failover_servers = math.ceil(recording_servers / 8)
+                # --- 3. FAS SİSTEMİ ---
+                elif "FAS" in sys:
+                    st.markdown("### 🚨 Yangın Algılama ve İhbar Sistemi (FAS)")
+                    fc1, fc2 = st.columns(2)
+                    with fc1:
+                        fas_sqm = st.number_input("Yangın Algılama Yapılacak Kapalı Alan (m²)", min_value=1000, value=75000, step=5000, key="f_sqm")
+                        fas_raised_floor = st.checkbox("Asma Tavan ve Yükseltilmiş Taban İçi Dedektörler Dahil Edilsin", value=True, key="f_rf")
+                    with fc2:
+                        fas_beam_detectors = st.number_input("Yüksek Tavan / Hangar İçin Işın (Beam) Dedektör Çifti Sayısı", min_value=0, value=6, key="f_beam")
 
-    # Kontrol Odası ve Monitör Hesaplaması
-    video_wall_monitors = active_operators * 2 + (control_rooms * 2)
-    total_workstations = active_operators + remote_view_points
+                # --- 4. PA/VA SİSTEMİ ---
+                elif "PA/VA" in sys:
+                    st.markdown("### 📢 Acil Anons ve Seslendirme Sistemi (PA/VA)")
+                    pc1, pc2 = st.columns(2)
+                    with pc1:
+                        pava_sqm = st.number_input("Anons Yapılacak Toplam Kapalı Alan (m²)", min_value=1000, value=75000, step=5000, key="p_sqm")
+                        pava_zones = st.number_input("Bağımsız Anons Bölgesi (Zone) Sayısı", min_value=1, value=16, step=1, key="p_zones")
+                    with pc2:
+                        pava_environment = st.selectbox("Baskın Ortam Tipi & Gürültü Seviyesi", ["Standart Terminal Alanı (70-75 dB)", "Gürültülü Otopark / Teknik Alan (80-85 dB)", "Sessiz Ofis / Yönetim Alanı (60 dB)"], key="p_env")
 
-    # Sonuçların Gösterilmesi
-    st.success(f"✅ **{project_name}** İçin Ön Tasarım Başarıyla Oluşturuldu!")
-    st.subheader("📊 Tahmini Donanım & Altyapı İhtiyaç Raporu")
+        st.markdown("---")
+        submit_button = st.form_submit_button("🚀 Tüm Seçili Sistemlerin İhtiyaç Raporunu Oluştur", use_container_width=True)
 
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Toplam Kamera", f"{total_cams:,} Adet")
-    m2.metric("Gerekli Depolama", f"{total_storage_tb:,} TB")
-    m3.metric("Kayıt Sunucusu (64Ch)", f"{recording_servers + failover_servers} Adet", delta=f"+{failover_servers} Yedek", delta_color="normal")
-    m4.metric("İzleme Ekranı (55\")", f"{video_wall_monitors} Adet")
-
-    st.markdown("---")
-
-    # Detay Tabloları
-    tab1, tab2, tab3 = st.tabs(["📷 Kamera Dağılımı", "💾 Kayıt & Depolama", "🖥️ İzleme Odaları & Kontrol"])
-
-    with tab1:
-        cam_table_data = {
-            "Bölge / Ekipman": ["Terminal İçi Sabit Dome/Bullet", "Pasaport/Güvenlik Detay (FR)", "Çevre Çit Sabit Kamera", "Çevre Çit Termal / PTZ"],
-            "Tahmini Adet": [terminal_cams, checkpoint_cams, fence_fixed, fence_thermal_ptz],
-            "Açıklama": ["Genel alan izleme", "Yüz tanıma & detay takibi", "Sınır hat izleme", "Gece & uzun mesafe algılama"]
-        }
+    # --- HESAPLAMA VE SONUÇ EKRANI ---
+    if submit_button:
+        st.success(f"✅ **{project_name}** İçin Seçilen Sistem Planlama Raporu Başarıyla Hesaplandı!")
         
-        if use_anpr:
-            cam_table_data["Bölge / Ekipman"].append("Plaka Tanıma Kamerası (ANPR)")
-            cam_table_data["Tahmini Adet"].append(anpr_cams)
-            cam_table_data["Açıklama"].append(f"Nizamiye & otopark giriş-çıkış ({anpr_speed})")
-
-        st.table(cam_table_data)
-
-    with tab2:
-        st.write(f"• **Net Depolama İhtiyacı:** `{total_storage_tb:,} TB` ({storage_days} gün saklama esasına göre)")
-        st.write(f"• **Ana Kayıt Sunucusu:** `{recording_servers} Adet` (64 Kanal Kapasiteli)")
-        st.write(f"• **Yedek Sunucu (N+1 Failover):** `{failover_servers} Adet` (Kesintisiz çalışma için)")
-
-    with tab3:
-        st.write(f"• **Ana Kontrol Odası (MOC):** `{control_rooms} Adet` Merkez")
-        st.write(f"• **Aktif Operatör Sayısı:** `{active_operators} Kişi` / Vardiya")
-        st.write(f"• **Uzak İzleme Noktaları:** `{remote_view_points} Adet` (Amir / Yönetim Binası)")
-        st.write(f"• **Video Wall / İzleme Monitörü:** `{video_wall_monitors} Adet` 55\" Endüstriyel Ekran")
-        st.write(f"• **İstemci / Operatör İş İstasyonu (PC):** `{total_workstations} Adet` (Çoklu ekran destekli PC)")
-
-    # --- PROFESYONEL EXCEL OLUŞTURMA İŞLEMLERİ ---
-    st.markdown("---")
-    st.subheader("📥 Kurumsal Rapor İndirme")
-
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        
-        # Excel Veri Yapısı
-        excel_data = [
-            {"Kategori": "PROJE BİLGİSİ", "Bileşen / Tanım": "Proje Adı", "Değer / Miktar": project_name, "Birim": "-"},
-            {"Kategori": "PROJE BİLGİSİ", "Bileşen / Tanım": "Havalimanı Tipi", "Değer / Miktar": airport_type, "Birim": "-"},
-            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Terminal Kapalı Alanı", "Değer / Miktar": sqm, "Birim": "m²"},
-            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Çevre Çit Uzunluğu", "Değer / Miktar": fence_m, "Birim": "Metre"},
-            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Güvenlik Kontrol Noktası", "Değer / Miktar": checkpoints, "Birim": "Nokta"},
-            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Plaka Tanıma (ANPR) Durumu", "Değer / Miktar": "Var" if use_anpr else "Yok", "Birim": "-"},
+        excel_rows = [
+            {"Sistem": "GENEL BİLGİ", "Bileşen / Tanım": "Proje Adı", "Değer / Miktar": project_name, "Birim": "-"},
+            {"Sistem": "GENEL BİLGİ", "Bileşen / Tanım": "Oluşturulma Tarihi", "Değer / Miktar": datetime.now().strftime('%d.%m.%Y %H:%M'), "Birim": "-"}
         ]
 
-        if use_anpr:
-            excel_data.append({"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "ANPR Araç Şerit Sayısı", "Değer / Miktar": parking_lanes, "Birim": "Şerit"})
-            excel_data.append({"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "ANPR Geçiş Hız Tipi", "Değer / Miktar": anpr_speed, "Birim": "-"})
+        # DETAY SEKMELERİ
+        res_tabs = st.tabs([f"📊 {s}" for s in selected_systems])
 
-        excel_data.extend([
-            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Kayıt Saklama Süresi", "Değer / Miktar": storage_days, "Birim": "Gün"},
-            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Çözünürlük Standardı", "Değer / Miktar": resolution, "Birim": "-"},
-            {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Terminal İçi Sabit Kamera", "Değer / Miktar": terminal_cams, "Birim": "Adet"},
-            {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Pasaport / Güvenlik (FR) Kamera", "Değer / Miktar": checkpoint_cams, "Birim": "Adet"},
-            {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Çevre Çit Sabit Kamera", "Değer / Miktar": fence_fixed, "Birim": "Adet"},
-            {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Çevre Çit Termal / PTZ Kamera", "Değer / Miktar": fence_thermal_ptz, "Birim": "Adet"},
-        ])
-
-        if use_anpr:
-            excel_data.append({"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Plaka Tanıma Kamerası (ANPR)", "Değer / Miktar": anpr_cams, "Birim": "Adet"})
-
-        excel_data.extend([
-            {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "TOPLAM KAMERA İHTİYACI", "Değer / Miktar": total_cams, "Birim": "Adet"},
-            {"Kategori": "DEPOLAMA & SUNUCU", "Bileşen / Tanım": "Net Depolama Alanı", "Değer / Miktar": total_storage_tb, "Birim": "TB"},
-            {"Kategori": "DEPOLAMA & SUNUCU", "Bileşen / Tanım": "64Ch Kayıt Sunucusu", "Değer / Miktar": recording_servers, "Birim": "Adet"},
-            {"Kategori": "DEPOLAMA & SUNUCU", "Bileşen / Tanım": "N+1 Failover Yedek Sunucu", "Değer / Miktar": failover_servers, "Birim": "Adet"},
-            {"Kategori": "KONTROL MERKEZİ", "Bileşen / Tanım": "Ana Kontrol Odası (MOC)", "Değer / Miktar": control_rooms, "Birim": "Adet"},
-            {"Kategori": "KONTROL MERKEZİ", "Bileşen / Tanım": "Aktif Operatör Sayısı", "Değer / Miktar": active_operators, "Birim": "Kişi"},
-            {"Kategori": "KONTROL MERKEZİ", "Bileşen / Tanım": "Uzak İzleme Noktası", "Değer / Miktar": remote_view_points, "Birim": "Nokta"},
-            {"Kategori": "KONTROL MERKEZİ", "Bileşen / Tanım": "55\" Video Wall Monitör", "Değer / Miktar": video_wall_monitors, "Birim": "Adet"},
-            {"Kategori": "KONTROL MERKEZİ", "Bileşen / Tanım": "Operatör İş İstasyonu (PC)", "Değer / Miktar": total_workstations, "Birim": "Adet"},
-        ])
-
-        df = pd.DataFrame(excel_data)
-        df.to_excel(writer, index=False, sheet_name='CCTV_Tasarim_Raporu', startrow=4)
-        
-        workbook = writer.book
-        worksheet = writer.sheets['CCTV_Tasarim_Raporu']
-
-        # STİL VE BİÇİMLENDİRME
-        header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
-        font_title = Font(name="Calibri", size=16, bold=True, color="1F4E78")
-        font_subtitle = Font(name="Calibri", size=10, italic=True, color="595959")
-        font_header = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-        font_data = Font(name="Calibri", size=11)
-        font_total = Font(name="Calibri", size=11, bold=True, color="1F4E78")
-
-        thin_border = Border(
-            left=Side(style='thin', color='D9D9D9'),
-            right=Side(style='thin', color='D9D9D9'),
-            top=Side(style='thin', color='D9D9D9'),
-            bottom=Side(style='thin', color='D9D9D9')
-        )
-
-        worksheet['A1'] = "CCTV SİSTEMİ ÖN TASARIM VE İHTİYAÇ RAPORU"
-        worksheet['A1'].font = font_title
-        worksheet['A2'] = f"Proje: {project_name} | Oluşturulma Tarihi: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
-        worksheet['A2'].font = font_subtitle
-
-        for col_num in range(1, len(df.columns) + 1):
-            cell = worksheet.cell(row=5, column=col_num)
-            cell.fill = header_fill
-            cell.font = font_header
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-
-        for row_num in range(6, len(df) + 6):
-            for col_num in range(1, len(df.columns) + 1):
-                cell = worksheet.cell(row=row_num, column=col_num)
-                cell.font = font_data
-                cell.border = thin_border
+        for idx, sys in enumerate(selected_systems):
+            with res_tabs[idx]:
                 
-                if col_num in [3, 4]:
-                    cell.alignment = Alignment(horizontal="center")
-                else:
-                    cell.alignment = Alignment(horizontal="left")
+                # --- 1. CCTV HESAPLAR ---
+                if "CCTV" in sys:
+                    sqm_per_cam = 60 if "Uluslararası" in cctv_airport_type else 90
+                    fence_m_per_cam = 40 if "Uluslararası" in cctv_airport_type else 60
+                    cam_per_check = 3 if "Uluslararası" in cctv_airport_type else 2
 
-                if worksheet.cell(row=row_num, column=2).value == "TOPLAM KAMERA İHTİYACI":
-                    cell.font = font_total
+                    terminal_cams = math.ceil(cctv_sqm / sqm_per_cam)
+                    checkpoint_cams = cctv_checkpoints * cam_per_check
+                    fence_cams = math.ceil(cctv_fence_m / fence_m_per_cam)
+                    anpr_cams = (cctv_lanes * 2) if cctv_use_anpr else 0
 
-        for col in worksheet.columns:
-            max_len = max(len(str(cell.value or '')) for cell in col)
-            col_letter = get_column_letter(col[0].column)
-            worksheet.column_dimensions[col_letter].width = max(max_len + 5, 12)
+                    fence_thermal = math.ceil(fence_cams * 0.15)
+                    fence_fixed = fence_cams - fence_thermal
+                    total_cams = terminal_cams + checkpoint_cams + fence_cams + anpr_cams
 
-    processed_data = output.getvalue()
+                    tb_per_cam_day = 0.02 if "4MP" in cctv_resolution else (0.015 if "2MP" in cctv_resolution else 0.035)
+                    total_storage_tb = math.ceil(total_cams * tb_per_cam_day * cctv_storage_days)
+                    recording_servers = math.ceil(total_cams / 64)
+                    failover_servers = math.ceil(recording_servers / 8)
+                    video_wall_monitors = cctv_operators * 2 + (cctv_control_rooms * 2)
 
-    # İndirme Butonu
-    st.download_button(
-        label="📊 Profesyonel İhtiyaç Raporunu Excel (.xlsx) Olarak İndir",
-        data=processed_data,
-        file_name=f"{project_name.replace(' ', '_')}_CCTV_Raporu.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True
-    )
+                    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+                    col_m1.metric("Toplam CCTV Kamera", f"{total_cams:,} Adet")
+                    col_m2.metric("Net Depolama", f"{total_storage_tb:,} TB")
+                    col_m3.metric("Kayıt Sunucusu (64Ch)", f"{recording_servers + failover_servers} Adet")
+                    col_m4.metric("Video Wall (55\")", f"{video_wall_monitors} Adet")
+
+                    st.table({
+                        "Ekipman Tanımı": ["Terminal İçi Sabit Kamera", "Pasaport/Güvenlik (FR) Kamera", "Çevre Çit Sabit Kamera", "Çevre Çit Termal/PTZ", "ANPR Plaka Kamera", "64Ch Kayıt Sunucusu", "Video Wall Monitör"],
+                        "Miktar": [terminal_cams, checkpoint_cams, fence_fixed, fence_thermal, anpr_cams, recording_servers + failover_servers, video_wall_monitors],
+                        "Birim": ["Adet", "Adet", "Adet", "Adet", "Adet", "Adet", "Adet"]
+                    })
+
+                    excel_rows.extend([
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Terminal Sabit Kamera", "Değer / Miktar": terminal_cams, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Pasaport/FR Kamera", "Değer / Miktar": checkpoint_cams, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Çevre Çit Sabit Kamera", "Değer / Miktar": fence_fixed, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Çevre Çit Termal/PTZ", "Değer / Miktar": fence_thermal, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "ANPR Plaka Kamera", "Değer / Miktar": anpr_cams, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "TOPLAM KAMERA", "Değer / Miktar": total_cams, "Birim": "Adet"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Net Depolama Alanı", "Değer / Miktar": total_storage_tb, "Birim": "TB"},
+                        {"Sistem": "CCTV", "Bileşen / Tanım": "Kayıt Sunucuları (N+1)", "Değer / Miktar": recording_servers + failover_servers, "Birim": "Adet"},
+                    ])
+
+                # --- 2. ACS HESAPLAR ---
+                elif "ACS" in sys:
+                    readers = acs_doors * 2  # Giriş-Çıkış Çift Okuyucu
+                    door_controllers = math.ceil(acs_doors / 4) # 4 Kapılı Kontrolcü
+                    turnstile_readers = acs_turnstiles * 2
+                    biometric_readers = math.ceil(acs_doors * 0.15) if acs_biometric else 0
+
+                    col_a1, col_a2, col_a3 = st.columns(3)
+                    col_a1.metric("Kontrollü Kapı", f"{acs_doors} Adet")
+                    col_a2.metric("Ana Kapı Kontrol Paneli", f"{door_controllers} Adet")
+                    col_a3.metric("Basılacak Kart Sayısı", f"{math.ceil(acs_users * 1.2):,} Adet")
+
+                    st.table({
+                        "Ekipman / Modül Tanımı": ["Kapı Kart Okuyucu (RFID)", "Turnike Kart Okuyucu", "Biyometrik Okuyucu", "4 Kapılı Kapı Kontrol Paneli", "Elektromanyetik Kilit / Kilit Karşılığı", "Proximity Kullanıcı Kartı (+%20 Yedek)"],
+                        "Miktar": [readers, turnstile_readers, biometric_readers, door_controllers, acs_doors, math.ceil(acs_users * 1.2)],
+                        "Birim": ["Adet", "Adet", "Adet", "Adet", "Adet", "Adet"]
+                    })
+
+                    excel_rows.extend([
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Kontrollü Kapı Sayısı", "Değer / Miktar": acs_doors, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Kapı Kart Okuyucu", "Değer / Miktar": readers, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Turnike Kart Okuyucu", "Değer / Miktar": turnstile_readers, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Biyometrik Okuyucu", "Değer / Miktar": biometric_readers, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "4-Kapı Kontrol Paneli", "Değer / Miktar": door_controllers, "Birim": "Adet"},
+                        {"Sistem": "ACS", "Bileşen / Tanım": "Basılacak Kart Miktarı", "Değer / Miktar": math.ceil(acs_users * 1.2), "Birim": "Adet"},
+                    ])
+
+                # --- 3. FAS HESAPLAR ---
+                elif "FAS" in sys:
+                    sqm_per_detector = 50 if fas_raised_floor else 70
+                    detectors = math.ceil(fas_sqm / sqm_per_detector)
+                    manual_call_points = math.ceil(fas_sqm / 500) # Her 500m2'ye 1 buton
+                    sirens = math.ceil(fas_sqm / 400) # Her 400m2'ye 1 flaşörlü siren
+                    loops = math.ceil(detectors / 200) # Loop başına 200 eleman
+                    panels = math.ceil(loops / 8) # 8 Looplu Santral
+
+                    col_f1, col_f2, col_f3 = st.columns(3)
+                    col_f1.metric("Optik Duman/Sıcaklık Dedektörü", f"{detectors:,} Adet")
+                    col_f2.metric("Yangın İhbar Butonu & Siren", f"{manual_call_points + sirens:,} Adet")
+                    col_f3.metric("8-Loop Yangın Santrali", f"{panels} Adet")
+
+                    st.table({
+                        "Ekipman Tanımı": ["Adresli Optik Duman Dedektörü", "Yangın İhbar Butonu", "Flaşörlü Siren / Flaşör", "Işın (Beam) Dedektörü", "8-Loop Yangın Algılama Santrali"],
+                        "Miktar": [detectors, manual_call_points, sirens, fas_beam_detectors, panels],
+                        "Birim": ["Adet", "Adet", "Adet", "Çift", "Adet"]
+                    })
+
+                    excel_rows.extend([
+                        {"Sistem": "FAS", "Bileşen / Tanım": "Adresli Optik Duman Dedektörü", "Değer / Miktar": detectors, "Birim": "Adet"},
+                        {"Sistem": "FAS", "Bileşen / Tanım": "Yangın İhbar Butonu", "Değer / Miktar": manual_call_points, "Birim": "Adet"},
+                        {"Sistem": "FAS", "Bileşen / Tanım": "Flaşörlü Siren", "Değer / Miktar": sirens, "Birim": "Adet"},
+                        {"Sistem": "FAS", "Bileşen / Tanım": "Işın (Beam) Dedektörü", "Değer / Miktar": fas_beam_detectors, "Birim": "Çift"},
+                        {"Sistem": "FAS", "Bileşen / Tanım": "8-Loop Yangın Santrali", "Değer / Miktar": panels, "Birim": "Adet"},
+                    ])
+
+                # --- 4. PA/VA HESAPLAR ---
+                elif "PA/VA" in sys:
+                    spk_sqm = 50 if "Gürültülü" in pava_environment else 80
+                    ceiling_speakers = math.ceil(pava_sqm / spk_sqm)
+                    horn_speakers = math.ceil(pava_sqm / 300) if "Gürültülü" in pava_environment else 0
+                    total_watt = (ceiling_speakers * 6) + (horn_speakers * 15)
+                    amplifiers = math.ceil(total_watt / 500) # 500W Amplifikatör
+
+                    col_p1, col_p2, col_p3 = st.columns(3)
+                    col_p1.metric("Tavan Hoparlörü", f"{ceiling_speakers:,} Adet")
+                    col_p2.metric("Toplam Güç İhtiyacı", f"{total_watt:,} Watt")
+                    col_p3.metric("500W Amplifikatör Ünitesi", f"{amplifiers} Adet")
+
+                    st.table({
+                        "Ekipman Tanımı": ["Tavan Tipi Anons Hoparlörü (6W)", "Korna/Horn Hoparlör (15W)", "Sistem Bölge (Zone) Sayısı", "500W Güç Amplifikatörü", "Anons Mikrofon İstasyonu"],
+                        "Miktar": [ceiling_speakers, horn_speakers, pava_zones, amplifiers, math.ceil(pava_zones / 4)],
+                        "Birim": ["Adet", "Adet", "Zone", "Adet", "Adet"]
+                    })
+
+                    excel_rows.extend([
+                        {"Sistem": "PA/VA", "Bileşen / Tanım": "Tavan Hoparlörü (6W)", "Değer / Miktar": ceiling_speakers, "Birim": "Adet"},
+                        {"Sistem": "PA/VA", "Bileşen / Tanım": "Korna Hoparlör (15W)", "Değer / Miktar": horn_speakers, "Birim": "Adet"},
+                        {"Sistem": "PA/VA", "Bileşen / Tanım": "Anons Bölgesi (Zone)", "Değer / Miktar": pava_zones, "Birim": "Zone"},
+                        {"Sistem": "PA/VA", "Bileşen / Tanım": "Anons Amplifikatörü (500W)", "Değer / Miktar": amplifiers, "Birim": "Adet"},
+                    ])
+
+        # --- EXCEL RAPORU İNDİRME ---
+        st.markdown("---")
+        st.subheader("📥 Bütünleşik Zayıf Akım Excel Raporu")
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df = pd.DataFrame(excel_rows)
+            df.to_excel(writer, index=False, sheet_name='Zayif_Akim_Tasarim_Raporu', startrow=4)
+            
+            workbook = writer.book
+            worksheet = writer.sheets['Zayif_Akim_Tasarim_Raporu']
+
+            header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+            font_title = Font(name="Calibri", size=16, bold=True, color="1F4E78")
+            font_subtitle = Font(name="Calibri", size=10, italic=True, color="595959")
+            font_header = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+            font_data = Font(name="Calibri", size=11)
+
+            thin_border = Border(
+                left=Side(style='thin', color='D9D9D9'), right=Side(style='thin', color='D9D9D9'),
+                top=Side(style='thin', color='D9D9D9'), bottom=Side(style='thin', color='D9D9D9')
+            )
+
+            worksheet['A1'] = "ZAYIF AKIM SİSTEMLERİ ÖN TASARIM VE İHTİYAÇ RAPORU"
+            worksheet['A1'].font = font_title
+            worksheet['A2'] = f"Proje: {project_name} | Tarih: {datetime.now
