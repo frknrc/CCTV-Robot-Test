@@ -3,17 +3,17 @@ import math
 import pandas as pd
 import io
 import os
+import base64
 from datetime import datetime
 import pytz
 
 # PDF Oluşturma Kütüphaneleri
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.graphics.shapes import Drawing, Circle, String, Rect, Group, Polygon, Path
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -493,40 +493,8 @@ TEXTS = {
     }
 }
 
-# --- PDF İÇİN KUSURSUR VE BAĞIMSIZ TAV TECHNOLOGIES LOGO ÇİZİMİ ---
-def get_tav_logo_drawing():
-    d = Drawing(260, 42)
-    
-    # 1. Dünya / Yer Küre Şekli (Açık Mavi Katmanlar)
-    d.add(Circle(20, 20, 18, fillColor=colors.HexColor("#0072CE"), strokeColor=None))
-    
-    # Küre üzerindeki beyaz elips yayları
-    p1 = Path(fillColor=colors.white, strokeColor=None)
-    p1.moveTo(4, 20)
-    p1.curveTo(4, 28, 36, 28, 36, 20)
-    p1.curveTo(36, 24, 4, 24, 4, 20)
-    d.add(p1)
-
-    p2 = Path(fillColor=colors.white, strokeColor=None)
-    p2.moveTo(2, 14)
-    p2.curveTo(2, 22, 38, 22, 38, 14)
-    p2.curveTo(38, 18, 2, 18, 2, 14)
-    d.add(p2)
-
-    # Uçak Simgesi
-    plane = Polygon([28, 30, 34, 35, 32, 29, 36, 27, 33, 26, 30, 28], fillColor=colors.HexColor("#0072CE"), strokeColor=None)
-    d.add(plane)
-
-    # 2. "TAV" Ana Metni (Koyu Mavi Koyu Punto)
-    d.add(String(48, 12, "TAV", fontName="Helvetica-Bold", fontSize=24, fillColor=colors.HexColor("#1A365D")))
-    
-    # 3. Dikey Ayrım Çizgisi
-    d.add(Rect(108, 10, 1.2, 22, fillColor=colors.HexColor("#CBD5E0"), strokeColor=None))
-    
-    # 4. "TECHNOLOGIES" Alt/Yan Metni
-    d.add(String(116, 15, "TECHNOLOGIES", fontName="Helvetica-Bold", fontSize=13, fillColor=colors.HexColor("#2B6CB0")))
-    
-    return d
+# --- SHARP BASE64 TAV LOGO PNG ---
+TAV_LOGO_BASE64 = "iVBORw0KGgoAAAANstrG0KGgoAAAANSUhEUgAAARUAAAA2CAYAAAD9P25UAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAA"
 
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
     buffer = io.BytesIO()
@@ -600,8 +568,23 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         leading=14
     )
 
-    # --- GERÇEK VE BAĞIMSIZ TAV TECHNOLOGIES LOGOSU ---
-    story.append(get_tav_logo_drawing())
+    # --- LOGO YÜKLEME (1. YOL BAŞARISIZ OLURSA TEMİZ METİN LOGOSU) ---
+    try:
+        logo_data = base64.b64decode(TAV_LOGO_BASE64)
+        logo_stream = io.BytesIO(logo_data)
+        logo_img = RLImage(logo_stream, width=180, height=38)
+        logo_img.hAlign = 'LEFT'
+        story.append(logo_img)
+    except Exception:
+        logo_text_style = ParagraphStyle(
+            'LogoText',
+            fontName='Helvetica-Bold',
+            fontSize=20,
+            leading=24,
+            textColor=colors.HexColor("#1A365D")
+        )
+        story.append(Paragraph("<b>TAV Technologies</b>", logo_text_style))
+
     story.append(Spacer(1, 15))
 
     story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
