@@ -3,7 +3,8 @@ import math
 import pandas as pd
 import io
 import os
-import base64
+import requests
+from PIL import Image as PILImage
 from datetime import datetime
 import pytz
 
@@ -493,9 +494,6 @@ TEXTS = {
     }
 }
 
-# --- SHARP BASE64 TAV LOGO PNG ---
-TAV_LOGO_BASE64 = "iVBORw0KGgoAAAANstrG0KGgoAAAANSUhEUgAAARUAAAA2CAYAAAD9P25UAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAA"
-
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -568,14 +566,24 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         leading=14
     )
 
-    # --- LOGO YÜKLEME (1. YOL BAŞARISIZ OLURSA TEMİZ METİN LOGOSU) ---
+    # --- TAV LOGOSUNU İNTERNETTEN CANLI PNG OLARAK ÇEKİP PDF'E KOYMA ---
+    png_logo_url = "https://raw.githubusercontent.com/tavtechnologies/assets/main/tav_logo.png"
     try:
-        logo_data = base64.b64decode(TAV_LOGO_BASE64)
-        logo_stream = io.BytesIO(logo_data)
-        logo_img = RLImage(logo_stream, width=180, height=38)
-        logo_img.hAlign = 'LEFT'
-        story.append(logo_img)
+        resp = requests.get(png_logo_url, timeout=4)
+        if resp.status_code == 200:
+            img_bytes = io.BytesIO(resp.content)
+            pil_img = PILImage.open(img_bytes)
+            img_stream = io.BytesIO()
+            pil_img.save(img_stream, format='PNG')
+            img_stream.seek(0)
+            
+            logo_rl = RLImage(img_stream, width=170, height=40)
+            logo_rl.hAlign = 'LEFT'
+            story.append(logo_rl)
+        else:
+            raise ValueError("Logo çekilemedi")
     except Exception:
+        # Bağlantı yoksa kusursuz yedek metin logosu
         logo_text_style = ParagraphStyle(
             'LogoText',
             fontName='Helvetica-Bold',
@@ -585,7 +593,7 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         )
         story.append(Paragraph("<b>TAV Technologies</b>", logo_text_style))
 
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 12))
 
     story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
     story.append(Paragraph(safe_str(f"<b>Havalimani / Proje Adi:</b> {project_name}"), normal_style))
