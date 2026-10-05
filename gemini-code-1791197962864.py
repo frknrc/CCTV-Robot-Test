@@ -2,10 +2,13 @@ import streamlit as st
 import math
 import pandas as pd
 from io import BytesIO
+from datetime import datetime
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
-    page_title="CCTV Ön Tasarım Asistanı",
+    page_title="CCTV Sistem Planlama Sihirbazı",
     page_icon="🎥",
     layout="wide"
 )
@@ -23,18 +26,22 @@ st.markdown(hide_st_style, unsafe_allow_html=True)
 # --- ŞİRKET LOGOSU VE BAŞLIK ---
 logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg" 
 
-col_logo, col_title = st.columns([1, 4])
+col_logo, col_title = st.columns([1.5, 3.5])
 with col_logo:
-    st.image(logo_url, width=180)
+    st.image(logo_url, width=320)  # Logo boyutu büyütüldü
 with col_title:
-    st.title("Havalimanı CCTV & Güvenlik Ön Tasarım Sihirbazı")
-    st.caption("Lütfen projenize ait verileri sırasıyla doldurarak ön tasarım raporunu oluşturun.")
+    st.title("CCTV Sistem Planlama Sihirbazı")
+    st.caption("Lütfen projenize ait verileri girerek donanım ve depolama ihtiyaç raporunu oluşturun.")
 
 st.markdown("---")
 
 # --- MÜŞTERİNİN KARŞISINA ÇIKACAK ADIM ADIM FORM ---
 with st.form("cctv_formu"):
     
+    st.subheader("📌 Proje Kimliği")
+    project_name = st.text_input("Havalimanı / Proje Adı", value="Örnek Havalimanı Terminal Projesi", help="Rapor başlığında yer alacaktır.")
+    
+    st.markdown("---")
     st.subheader("📝 Adım 1: Havalimanı Tipi ve Sınıfı")
     airport_type = st.radio(
         "Havalimanı Kapsamını Seçiniz:",
@@ -88,7 +95,7 @@ if submit_button:
     workstations = math.ceil(monitors / 4)
 
     # Sonuçların Gösterilmesi
-    st.success("✅ Projenize Özel Ön Tasarım Başarıyla Oluşturuldu!")
+    st.success(f"✅ **{project_name}** İçin Ön Tasarım Başarıyla Oluşturuldu!")
     st.subheader("📊 Tahmini Donanım & Altyapı İhtiyaç Raporu")
 
     m1, m2, m3, m4 = st.columns(4)
@@ -118,42 +125,101 @@ if submit_button:
         st.write(f"• **Video Wall / İzleme Monitörü:** `{monitors} Adet` 55\" Ekran")
         st.write(f"• **Operatör İş İstasyonu (PC):** `{workstations} Adet` (Çoklu ekran destekli PC)")
 
-    # --- EXCEL EXPORT (İNDİRME) BUTONU ---
+    # --- PROFESYONEL EXCEL OLUŞTURMA İŞLEMLERİ ---
     st.markdown("---")
-    st.subheader("📥 Raporu Bilgisayara İndir")
+    st.subheader("📥 Kurumsal Rapor İndirme")
 
-    # Excel Veri Tablosunu Hazırlama
-    excel_data = [
-        {"Kategori": "Girdi / Parametre", "Bileşen": "Havalimanı Tipi", "Miktar / Değer": airport_type},
-        {"Kategori": "Girdi / Parametre", "Bileşen": "Terminal Alanı (m²)", "Miktar / Değer": sqm},
-        {"Kategori": "Girdi / Parametre", "Bileşen": "Çevre Çit (Metre)", "Miktar / Değer": fence_m},
-        {"Kategori": "Girdi / Parametre", "Bileşen": "Güvenlik Noktası", "Miktar / Değer": checkpoints},
-        {"Kategori": "Girdi / Parametre", "Bileşen": "Kayıt Süresi (Gün)", "Miktar / Değer": storage_days},
-        {"Kategori": "Kamera Dağılımı", "Bileşen": "Terminal İçi Sabit Dome/Bullet", "Miktar / Değer": terminal_cams},
-        {"Kategori": "Kamera Dağılımı", "Bileşen": "Pasaport/Güvenlik Detay (FR)", "Miktar / Değer": checkpoint_cams},
-        {"Kategori": "Kamera Dağılımı", "Bileşen": "Çevre Çit Sabit Kamera", "Miktar / Değer": fence_fixed},
-        {"Kategori": "Kamera Dağılımı", "Bileşen": "Çevre Çit Termal / PTZ", "Miktar / Değer": fence_thermal_ptz},
-        {"Kategori": "Kamera Dağılımı", "Bileşen": "TOPLAM KAMERA", "Miktar / Değer": total_cams},
-        {"Kategori": "Depolama & Sunucu", "Bileşen": "Net Depolama (TB)", "Miktar / Değer": total_storage_tb},
-        {"Kategori": "Depolama & Sunucu", "Bileşen": "Ana Kayıt Sunucusu (64Ch)", "Miktar / Değer": recording_servers},
-        {"Kategori": "Depolama & Sunucu", "Bileşen": "N+1 Failover Yedek Sunucu", "Miktar / Değer": failover_servers},
-        {"Kategori": "İzleme Odası", "Bileşen": "55\" İzleme Monitörü", "Miktar / Değer": monitors},
-        {"Kategori": "İzleme Odası", "Bileşen": "Operatör İş İstasyonu (PC)", "Miktar / Değer": workstations},
-    ]
-
-    df = pd.DataFrame(excel_data)
-
-    # Excel Dosyasını Hafızada Oluşturma
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='CCTV_Oneri_Raporu')
+        
+        # Excel Veri Yapısı
+        excel_data = [
+            {"Kategori": "PROJE BİLGİSİ", "Bileşen / Tanım": "Proje Adı", "Değer / Miktar": project_name, "Birim": "-"},
+            {"Kategori": "PROJE BİLGİSİ", "Bileşen / Tanım": "Havalimanı Tipi", "Değer / Miktar": airport_type, "Birim": "-"},
+            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Terminal Kapalı Alanı", "Değer / Miktar": sqm, "Birim": "m²"},
+            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Çevre Çit Uzunluğu", "Değer / Miktar": fence_m, "Birim": "Metre"},
+            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Güvenlik Kontrol Noktası", "Değer / Miktar": checkpoints, "Birim": "Nokta"},
+            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Kayıt Saklama Süresi", "Değer / Miktar": storage_days, "Birim": "Gün"},
+            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Çözünürlük Standardı", "Değer / Miktar": resolution, "Birim": "-"},
+            {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Terminal İçi Sabit Kamera", "Değer / Miktar": terminal_cams, "Birim": "Adet"},
+            {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Pasaport / Güvenlik (FR) Kamera", "Değer / Miktar": checkpoint_cams, "Birim": "Adet"},
+            {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Çevre Çit Sabit Kamera", "Değer / Miktar": fence_fixed, "Birim": "Adet"},
+            {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Çevre Çit Termal / PTZ Kamera", "Değer / Miktar": fence_thermal_ptz, "Birim": "Adet"},
+            {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "TOPLAM KAMERA İHTİYACI", "Değer / Miktar": total_cams, "Birim": "Adet"},
+            {"Kategori": "DEPOLAMA & SUNUCU", "Bileşen / Tanım": "Net Depolama Alanı", "Değer / Miktar": total_storage_tb, "Birim": "TB"},
+            {"Kategori": "DEPOLAMA & SUNUCU", "Bileşen / Tanım": "64Ch Kayıt Sunucusu", "Değer / Miktar": recording_servers, "Birim": "Adet"},
+            {"Kategori": "DEPOLAMA & SUNUCU", "Bileşen / Tanım": "N+1 Failover Yedek Sunucu", "Değer / Miktar": failover_servers, "Birim": "Adet"},
+            {"Kategori": "KONTROL MERKEZİ", "Bileşen / Tanım": "55\" Video Wall Monitör", "Değer / Miktar": monitors, "Birim": "Adet"},
+            {"Kategori": "KONTROL MERKEZİ", "Bileşen / Tanım": "Operatör İş İstasyonu (PC)", "Değer / Miktar": workstations, "Birim": "Adet"},
+        ]
+
+        df = pd.DataFrame(excel_data)
+        df.to_excel(writer, index=False, sheet_name='CCTV_Tasarim_Raporu', startrow=4)
+        
+        workbook = writer.book
+        worksheet = writer.sheets['CCTV_Tasarim_Raporu']
+
+        # STİL VE BİÇİMLENDİRME (OPENPYXL)
+        # Renk Paleti (Kurumsal Lacivert & Gri)
+        header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+        title_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+        
+        font_title = Font(name="Calibri", size=16, bold=True, color="1F4E78")
+        font_subtitle = Font(name="Calibri", size=10, italic=True, color="595959")
+        font_header = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+        font_data = Font(name="Calibri", size=11)
+        font_total = Font(name="Calibri", size=11, bold=True, color="1F4E78")
+
+        thin_border = Border(
+            left=Side(style='thin', color='D9D9D9'),
+            right=Side(style='thin', color='D9D9D9'),
+            top=Side(style='thin', color='D9D9D9'),
+            bottom=Side(style='thin', color='D9D9D9')
+        )
+
+        # Başlık Bilgilerini Excel'in En Üstüne Ekleme
+        worksheet['A1'] = "CCTV SİSTEMİ ÖN TASARIM VE İHTİYAÇ RAPORU"
+        worksheet['A1'].font = font_title
+        worksheet['A2'] = f"Proje: {project_name} | Oluşturulma Tarihi: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
+        worksheet['A2'].font = font_subtitle
+
+        # Tablo Başlıklarını Biçimlendirme (5. Satır)
+        for col_num in range(1, len(df.columns) + 1):
+            cell = worksheet.cell(row=5, column=col_num)
+            cell.fill = header_fill
+            cell.font = font_header
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+
+        # Veri Hücrelerini Biçimlendirme
+        for row_num in range(6, len(df) + 6):
+            for col_num in range(1, len(df.columns) + 1):
+                cell = worksheet.cell(row=row_num, column=col_num)
+                cell.font = font_data
+                cell.border = thin_border
+                
+                # Ortala veya Sağa Hizala
+                if col_num in [3, 4]:
+                    cell.alignment = Alignment(horizontal="center")
+                else:
+                    cell.alignment = Alignment(horizontal="left")
+
+                # Toplam Kamera satırını koyu yap
+                if worksheet.cell(row=row_num, column=2).value == "TOPLAM KAMERA İHTİYACI":
+                    cell.font = font_total
+
+        # Otomatik Sütun Genişliği Ayarlama
+        for col in worksheet.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            col_letter = get_column_letter(col[0].column)
+            worksheet.column_dimensions[col_letter].width = max(max_len + 5, 12)
+
     processed_data = output.getvalue()
 
     # İndirme Butonu
     st.download_button(
-        label="📊 İhtiyaç Raporunu Excel (.xlsx) Olarak İndir",
+        label="📊 Profesyonel İhtiyaç Raporunu Excel (.xlsx) Olarak İndir",
         data=processed_data,
-        file_name="CCTV_On_Tasarim_Raporu.xlsx",
+        file_name=f"{project_name.replace(' ', '_')}_CCTV_Raporu.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         use_container_width=True
     )
