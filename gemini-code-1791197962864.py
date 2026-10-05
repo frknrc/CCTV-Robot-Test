@@ -4,6 +4,8 @@ import pandas as pd
 import io
 import os
 from datetime import datetime
+import pytz
+from streamlit_javascript import st_javascript
 
 # PDF Oluşturma Kütüphaneleri
 from reportlab.lib.pagesizes import A4
@@ -29,6 +31,9 @@ hide_st_style = """
             </style>
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
+
+# --- KULLANICININ TARAYICI SAAT DİLİMİNİ OTOMATİK YAKALAMA ---
+user_timezone_str = st_javascript("Intl.DateTimeFormat().resolvedOptions().timeZone")
 
 # --- ÇEVİRİ SÖZLÜĞÜ (TR / EN / KK) ---
 TEXTS = {
@@ -208,7 +213,6 @@ def generate_pdf(project_name, results, report_datetime_str, date_label):
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
     story = []
     
-    # Türkçe font ve dönüştürme ayarı
     font_name = "Helvetica"
     font_bold_name = "Helvetica-Bold"
     
@@ -415,7 +419,17 @@ else:
     # --- HESAPLAMA MANTIĞI VE SONUÇLAR ---
     if submit_button:
         calculated_results = {}
-        now_str = datetime.now().strftime("%d.%m.%Y - %H:%M")
+        
+        # Tarayıcı Saat Dilimini Kullanma (Hata Durumunda UTC+3 Türkiye Saatini Esas Alma)
+        try:
+            if user_timezone_str and isinstance(user_timezone_str, str):
+                user_tz = pytz.timezone(user_timezone_str)
+            else:
+                user_tz = pytz.timezone("Europe/Istanbul")
+        except Exception:
+            user_tz = pytz.timezone("Europe/Istanbul")
+
+        now_str = datetime.now(user_tz).strftime("%d.%m.%Y - %H:%M")
 
         for sys in selected_systems:
             # 1. CCTV HESAPLAMA
@@ -522,10 +536,9 @@ else:
         st.markdown("---")
         st.subheader(t["download_section"])
 
-        # EXCEL OLUŞTURMA (Özet/Tarih Bilgili Sayfa Dahil)
+        # EXCEL OLUŞTURMA
         excel_buffer = io.BytesIO()
         with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-            # Genel Bilgi Sayfası
             info_df = pd.DataFrame([
                 {"Parametre": t["project_name_label"], "Değer": st.session_state['project_name']},
                 {"Parametre": t["report_date_label"], "Değer": st.session_state['report_datetime']}
