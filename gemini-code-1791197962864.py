@@ -3,6 +3,12 @@ import math
 import pandas as pd
 import io
 
+# PDF Oluşturma Kütüphaneleri
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
     page_title="Zayıf Akım Sistem Planlama Sihirbazı",
@@ -189,6 +195,57 @@ TEXTS = {
     }
 }
 
+# --- PDF OLUŞTURMA FONKSİYONU ---
+def generate_pdf(project_name, results):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    story = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'TitleStyle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        leading=22,
+        textColor=colors.HexColor("#1A365D"),
+        spaceAfter=10
+    )
+    subtitle_style = ParagraphStyle(
+        'SubTitleStyle',
+        parent=styles['Heading2'],
+        fontSize=13,
+        leading=16,
+        textColor=colors.HexColor("#2B6CB0"),
+        spaceBefore=12,
+        spaceAfter=6
+    )
+
+    story.append(Paragraph(f"Zayif Akim Sistem Planlama Raporu", title_style))
+    story.append(Paragraph(f"<b>Proje Adı:</b> {project_name}", styles['Normal']))
+    story.append(Spacer(1, 15))
+
+    for sys_key, df in results.items():
+        story.append(Paragraph(f"<b>{sys_key} Metrikleri</b>", subtitle_style))
+        
+        table_data = [df.columns.tolist()] + df.values.tolist()
+        t = Table(table_data, colWidths=[240, 100, 100])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#2B6CB0")),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor("#F7FAFC")),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+        ]))
+        story.append(t)
+        story.append(Spacer(1, 15))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
 # --- DİL SEÇİMİ ---
 col_lang, col_blank = st.columns([1.5, 3.5])
 with col_lang:
@@ -309,7 +366,7 @@ else:
     st.markdown("---")
     submit_button = st.button(t["submit_btn"], use_container_width=True, type="primary")
 
-    # --- HESAPLAMA MANTIĞI VESHESAPLAMA SONUÇLARI ---
+    # --- HESAPLAMA MANTIĞI VE SONUÇLAR ---
     if submit_button:
         calculated_results = {}
 
@@ -423,6 +480,9 @@ else:
                 df_res.to_excel(writer, sheet_name=sys_key, index=False)
         excel_data = excel_buffer.getvalue()
 
+        # PDF OLUŞTURMA
+        pdf_data = generate_pdf(st.session_state['project_name'], st.session_state['results'])
+
         col_dl1, col_dl2 = st.columns(2)
         with col_dl1:
             st.download_button(
@@ -430,5 +490,14 @@ else:
                 data=excel_data,
                 file_name=f"{st.session_state['project_name']}_Zayif_Akim_Raporu.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+
+        with col_dl2:
+            st.download_button(
+                label="📄 PDF Raporu İndir (.pdf)",
+                data=pdf_data,
+                file_name=f"{st.session_state['project_name']}_Zayif_Akim_Raporu.pdf",
+                mime="application/pdf",
                 use_container_width=True
             )
