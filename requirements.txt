@@ -4,3 +4,5 @@ openpyxl
 reportlab
 streamlit-javascript
 pytz
+XlsxWriter
+openpyxl
