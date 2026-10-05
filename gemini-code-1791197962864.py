@@ -15,7 +15,7 @@ st.set_page_config(
 
 # --- ÜST MENÜ, GİTHUB SİMGELERİ VE DİNAMİK "PRESS ENTER TO APPLY" ÇEVİRİSİ (CSS) ---
 def apply_custom_language_styles(lang_code):
-    # Diller için Enter Ipucu Metinleri
+    # Diller için Enter İpucu Metinleri
     instructions = {
         "TR": "Uygulamak için Enter'a basınız",
         "EN": "Press Enter to apply",
@@ -26,12 +26,12 @@ def apply_custom_language_styles(lang_code):
     
     custom_css = f"""
     <style>
-    /* Streamlit Ust/Alt Menuleri Gizleme */
+    /* Streamlit Üst/Alt Menüleri Gizleme */
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     header {{visibility: hidden;}}
     
-    /* Input alanlarindaki 'Press Enter to apply' metnini Türkçe/Kazakça değiştirme */
+    /* Input alanlarındaki 'Press Enter to apply' metnini seçili dile dönüştürme */
     div[data-testid="InputInstructions"] {{
         font-size: 0px !important;
     }}
@@ -506,6 +506,7 @@ TEXTS = {
     }
 }
 
+# --- PDF OLUŞTURMA (LAZY LOADING - YALNIZCA ÇAĞRILDIĞINDA YÜKLENİR) ---
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
     from reportlab.lib.pagesizes import A4
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -656,6 +657,7 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
     buffer.seek(0)
     return buffer.getvalue()
 
+# --- EXCEL OLUŞTURMA (LAZY LOADING) ---
 def generate_excel(results, inputs_summary, t_labels):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
