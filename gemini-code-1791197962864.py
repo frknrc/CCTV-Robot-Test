@@ -3,14 +3,12 @@ import math
 import pandas as pd
 import io
 import os
-import urllib.request
 from datetime import datetime
 import pytz
-from streamlit_javascript import st_javascript
 
 # PDF Oluşturma Kütüphaneleri
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
@@ -33,8 +31,44 @@ hide_st_style = """
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
-# --- KULLANICININ TARAYICI SAAT DİLİMİNİ OTOMATİK YAKALAMA ---
-user_timezone_str = st_javascript("Intl.DateTimeFormat().resolvedOptions().timeZone")
+# --- ÜLKE/ŞEHİR SEÇİMİNE GÖRE SAAT DİLİMİ HARİTASI ---
+COUNTRY_TIMEZONES = {
+    # Türkçe Ülke İsimleri
+    "Türkiye": "Europe/Istanbul",
+    "Kazakistan": "Asia/Almaty",
+    "Azerbaycan": "Asia/Baku",
+    "Gürcistan": "Asia/Tbilisi",
+    "Suudi Arabistan": "Asia/Riyadh",
+    "Birleşik Arap Emirlikleri": "Asia/Dubai",
+    "Katar": "Asia/Qatar",
+    "Özbekistan": "Asia/Tashkent",
+    "Kırgızistan": "Asia/Bishkek",
+    "Almanya": "Europe/Berlin",
+    
+    # İngilizce Ülke İsimleri
+    "Turkey": "Europe/Istanbul",
+    "Kazakhstan": "Asia/Almaty",
+    "Azerbaijan": "Asia/Baku",
+    "Georgia": "Asia/Tbilisi",
+    "Saudi Arabia": "Asia/Riyadh",
+    "United Arab Emirates": "Asia/Dubai",
+    "Qatar": "Asia/Qatar",
+    "Uzbekistan": "Asia/Tashkent",
+    "Kyrgyzstan": "Asia/Bishkek",
+    "Germany": "Europe/Berlin",
+    
+    # Kazakça Ülke İsimleri
+    "Түркия": "Europe/Istanbul",
+    "Қазақстан": "Asia/Almaty",
+    "Әзірбайжан": "Asia/Baku",
+    "Грузия": "Asia/Tbilisi",
+    "Сауд Арабиясы": "Asia/Riyadh",
+    "Біріккен Араб Әмірліктері": "Asia/Dubai",
+    "Катар": "Asia/Qatar",
+    "Өзбекстан": "Asia/Tashkent",
+    "Қырғызстан": "Asia/Bishkek",
+    "Германия": "Europe/Berlin"
+}
 
 # --- ÜLKE VE ŞEHİR VERİSİ (ÇOK DİLLİ) ---
 LOCATION_DATA = {
@@ -59,7 +93,7 @@ LOCATION_DATA = {
         "Saudi Arabia": ["Riyadh", "Jeddah", "Mecca", "Medina", "Dammam", "Other"],
         "United Arab Emirates": ["Dubai", "Abu Dhabi", "Sharjah", "Other"],
         "Qatar": ["Doha", "Al Rayyan", "Other"],
-        "Uzbekistan": ["Tashkent", "Samarkand", "Buhara", "Other"],
+        "Uzbekistan": ["Tashkent", "Samarkand", "Bukhara", "Other"],
         "Kyrgyzstan": ["Bishkek", "Osh", "Other"],
         "Germany": ["Berlin", "Munich", "Frankfurt", "Hamburg", "Other"],
         "Other": ["Other"]
@@ -229,7 +263,7 @@ TEXTS = {
         "location_label": "Location",
         "inputs_header": "📋 Input Parameters (Design Criteria)",
         "outputs_header": "📊 Calculated Requirements (System Outputs)",
-        "redundancy_label": "⚙️ Redundancy / Margin Rate (%)",
+        "redundancy_label": "⚙ Redundancy / Margin Rate (%)",
         "col_input_param": "Input Parameter",
         "col_input_val": "Value",
         "col_metric": "Component / Metric",
@@ -533,22 +567,17 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         leading=14
     )
 
-    # --- ORIJINAL TAV LOGOSUNU URL ÜZERİNDEN INDIRİP YÜKLEME ---
-    logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
-    try:
-        # PNG formatındaki resmi indirip doğrudan nesneye dönüştürüyoruz
-        logo_png_url = "https://raw.githubusercontent.com/tavtechnologies/assets/main/tav_logo.png"
-        img_data = urllib.request.urlopen(logo_png_url).read()
-        img_stream = io.BytesIO(img_data)
-        logo_img = RLImage(img_stream, width=150, height=45)
-        logo_img.hAlign = 'LEFT'
-        story.append(logo_img)
-    except Exception:
-        # İnternet bağlantısı kesilirse yedek temiz metin logosu
-        logo_fallback_style = ParagraphStyle('LogoFallback', fontName='Helvetica-Bold', fontSize=18, textColor=colors.HexColor("#1A365D"))
-        story.append(Paragraph("<b>TAV Technologies</b>", logo_fallback_style))
+    logo_text_style = ParagraphStyle(
+        'LogoText',
+        fontName='Helvetica-Bold',
+        fontSize=20,
+        leading=24,
+        textColor=colors.HexColor("#1A365D")
+    )
 
-    story.append(Spacer(1, 15))
+    # --- ŞIK METİN LOGOSU ("TAV Technologies") ---
+    story.append(Paragraph("<b>TAV Technologies</b>", logo_text_style))
+    story.append(Spacer(1, 10))
 
     story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
     story.append(Paragraph(safe_str(f"<b>Havalimani / Proje Adi:</b> {project_name}"), normal_style))
@@ -794,18 +823,17 @@ else:
 
     # --- HESAPLAMA MANTIĞI VE SONUÇLAR ---
     if submit_button:
-        # KESİN ZORUNLU KONTROL: Proje adı yazılmadıysa hiçbir şey hesaplama ve indirme butonu koyma
+        # ZORUNLU KONTROL: Proje adı boş bırakılamaz
         if not project_name or not project_name.strip():
             st.error(t["warning_no_project"])
         else:
             calculated_results = {}
             inputs_summary = {}
 
+            # ÜLKE SEÇİMİNE DUYARLI OTOMATİK SAAT DİLİMİ
+            target_tz_str = COUNTRY_TIMEZONES.get(selected_country, "Europe/Istanbul")
             try:
-                if user_timezone_str and isinstance(user_timezone_str, str):
-                    user_tz = pytz.timezone(user_timezone_str)
-                else:
-                    user_tz = pytz.timezone("Europe/Istanbul")
+                user_tz = pytz.timezone(target_tz_str)
             except Exception:
                 user_tz = pytz.timezone("Europe/Istanbul")
 
