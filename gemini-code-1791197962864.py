@@ -3,18 +3,20 @@ import math
 import pandas as pd
 import io
 import os
-import base64
 from datetime import datetime
 import pytz
 from streamlit_javascript import st_javascript
 
 # PDF Oluşturma Kütüphaneleri
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+
+# Vektörel Çizim Kütüphaneleri (TAV Logosunu Kodla Çizmek İçin)
+from reportlab.graphics.shapes import Drawing, Rect, String, Group
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -390,7 +392,7 @@ TEXTS = {
         "cctv_lanes": "ANPR Кіру/Шығу жолақтарының саны",
         "cctv_speed": "Қозғалыс жылдамдығының түрі",
         "cctv_speed_low": "Төмен жылдамдық (Бақылау-өткізу пункті / Шлагбаум)",
-        "cctv_speed_high": "Жоғары жылдамдық (Негізгі жол / VIP кіру)",
+        "cctv_speed_high": "Жоғары жылдамдық (Негізgi жол / VIP кіру)",
         "cctv_cr": "Негізгі басқару бөлмелерінің саны",
         "cctv_op": "Ауысымдағы белсенді операторлар саны",
         "cctv_rem": "Қашықтан бақылау нүктелерінің саны",
@@ -458,98 +460,26 @@ TEXTS = {
     }
 }
 
-# --- PDF İÇİN PNG FORMATINDA YÜKSEK ÇÖZÜNÜRLÜKLÜ TAV LOGO BASE64 ---
-TAV_LOGO_PNG_BASE64 = (
-    "iVBORw0KGgoAAAANSUhEUgAAAYAAAABgCAYAAAD2M8G/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAA"
-    "AXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNv"
-    "ZnR3YXJlAHd3dy5pbmtzY2FwZS5vcmeb3j2DAAAO20lEQVR4Ae3da5Ac1XkG8Of0zO7sShIgy1gw"
-    "3og4ByI2mCuxCRBs4yqXySW2y4lMylUqSSWp8iN5Ede3UpXyI/khf9I/lSuplEuC41Iu5UBygw3m"
-    "YmsD4sA4iLAtIQaRBCS0I3S/3p3eM139p2f39Mzszs4i36/q2pne231md2/f3vd859sT09fXp9qf"
-    "ff2p6q9fe3q2u3l5evmG34vH3f7Yrfb8q/98Z44/+9k7sv7H/3P0n9f2/i88/d7sv3f3i3/dmb1d"
-    "evr61F333mO/9KWH44GFi7J7D/e2f2v//Cff/3R2z3N3ZXf3/mJmdP5fX/vE38y40v+/f934h2s/"
-    "0f8Svf3p/X1x/q/u9r54+/f38I/v/8o+yPcf+v1b5pSXXnpJPfjgg2ptba3p2te+9rXq1a9+dfuI"
-    "l1i/1157rfr0pz/dfq7Xf1m/i3273Xfffe1n35v/4/X74vW+X91/+/d/5f0f3H/8+735fX82I9/5"
-    "jndU9957bx4fX7hwof3X4vLq+p//p//T+/T/8/9l9v7m31+/84n8vrr5x1/N3L3/m/6vfefd7d90"
-    "y38a//fMfb8//u/rXvSrv//bX3znZ/Z3/eI04x3u+x3u3f1s//4S/41L3vf/9d4/9f7eXfX53m/v"
-    "+Xvv/S7v9X/+15++rf/R/e2fX7/26X3y59a72x393/P03o939E8f9X+X4v/fXf34/fK/y1v2/y/k"
-    "i1/8YrW2tlb19vbO+L5u6f/e/m4f2u0/vv8L3fU/6Xf9m9f/eNnv8o3//m/3l7L2Lp/+w20bvf5a"
-    "Pvb5e+b3A+/9Xf/e9X6R/4e4O39vv6N/X+/I/o7b8m9I743ff/b98fvxj3+86vXn//o42t37YvI0"
-    "395u3/m82X34q1//2kI/73917P7w+s7f502/i2/pP398X+e/55f75e7a91z4f0x/u3fvXfD18P9X"
-    "9fN//vMft3/D+/XfCInN3P97zvdXv/rVrV//S9/Sfy1O28f5u1/021f1v43rS+/Xvvz8L+/z/Lff"
-    "+3aO/4I3e4/o/Ivf593297i4uX/e5b722mvt55iZ2u3b/3p42t/10Xv/fH/8Lff1yX8e1+/2G3e+""9vX+C63L+79e/494jP+Yx/x3eYf43x92994Pf/e4u//xW//Gf8I7O/9m58X9/0L/f//6"
-    "2Xv83O4m75v94m6/0XmP/3f3m//1d/8r3/E/e+/n32x35+8+v/vd4x733I2v//1y/Xj/+a+43/1x"
-    "/vO/++///3v3x9/O6b3Pq37S+/3r3d9b57+/5X/2e365X34d//e/vveX47+85+X99f/v/H1v929v"
-    "/+/+1+u/8Lq/+1/e/8f09/39//4f8T42f1f+d//u0//33I5Xm9m3/X0Xm3f///n/L/f//e//4P4d"
-    "7X/rO+e/X/v1+f/f4r9++02fI7/fL3f/i1///7veX/pL3rA/X9eL+f1/+qX35Xv/n9vf2fn44r+4"
-    "5dvd/5v71//4f/mG33/9p/eJd9m331sXvvftb3/b2f+S3/1++P0N75C/8bXve+d8P27vv55f+3L3"
-    "3fI//mPfe0f3S9/aP7f93t+e3z2//1X3v/a8m+/022/b/fO2vevff087P969v3f3e+/31L6+3Xvd"
-    "475u/vUf/n+7b3b3/Nff5Xf/+5X/37vd/9vveX3vv//O/719+/u/83+3e3f34S+77y2v62/vfI5b"
-    "66N3v32ff+m76s9m+feO+Iu/+IvWP//zP6+2bt2q7S17/4svvlgtLS1VO3fudO9R//7v/15/8IMf"
-    "1O724s3a088995xaXV11X/qI21dffVWvrKw4+47L5OTkjA0/evSoWllZ4Z5+tbm5aX/zJ2dn5/2E"
-    "d+/ezfZ/SOfn33vPv/XWW+rWW2917RzYvXu3M232z19YWHDn5t/0ycnJPp33qDfeeENdvHgRffrU"
-    "f3oP4x0f/SIn9a+L+/35+/v3//72X4v094p294l///d/v5qcnHT/sJz9x40733Oeeebj1Tve8Y6S"
-    "7/xHvf323p33f92e3a89eP/99/fqv/fO+7+H23/v93Nf5GOf+4p66qnd6j3veU/J/Oefy1133e38"
-    "83DnnW8/p+/m7Pne92p/P279q+/yO33X/C1f85q99tpr6v/44Ac/6Pbf3Xvvvertt/drd19+m43X"
-    "ffH888+rt33m36m4P5+enLzB9p3361//er3t3f9A7S3Xf84Xn3y3a39Jb933d73m//5X80e9x0e+""e3X7S0313i1/9a/m3v6t103S6x/4/4//9T/+1bS26f8s/y3m5eUfUffcc9/M2vj884+7"
-    "9fOorrvunvn4i/X83u3dOfe4/2p9m+34q3ve1/d68O+91157Td+8/a/L7a++e/7d1+719f9SXX3l"
-    "Ve7d33iG64d/x4X3/fRdt7m3f3v0e/853e/d19335u53p+45f/2f33Xfvfef/O//84n3v//+9f/0"
-    "T/9U84c//KH+n//53+I+d+/xXm7fP/7f69/O3T//+4++O+98/61x/1v84z/+465f9L9L+Rvd8Ld9"
-    "S3v/m/vff/c1vvud80mve3N3f7/+/S1f+7U3x+2f4n/345++x3/zfe5zv+1/8A/231///f+v7fvv"
-    "//+/Lne3e/7/s9//5f/mP37j//C/m3e///d73//+N73m97637e/2S9//Iu9+433/5f/fN762/3/x"
-    "7fPfv/v33/z3e2++5fe99f9v8T2f/p/c4/uX2S/N/y/f+O+/o///jXv7f5979f/y372993u3/eXm"
-    "7+/j//jvfO+L/mN/y3//2+ve/O933/P//v9S//ff19ffu13Xn/1O//37//e7//mN3/j/p///94vP"
-    "e/7L+fXv3f+ffN3+/i//8fe5/327v//3v9vvfMtrX/m/+93vf3uX33e//f/v///p7/yvv+Pee3f0"
-    "/v/a/vf9vN/v+Xvd8b3+n9/X///p//2fv//v//vffsff1/Xf3+2/3++9b3/+f5t3+P/fef038z3x"
-    "X//2tz33v/S34l/22f1p3/bvv82vfvvvebf//d9v1f3Xf1yffP0+33P//tS+9X/381/s5ffu+y//"
-    "3f/X69/k/u2f9/2vv3v/fN//8R7fveee6f635fPftf73vP359///Tf75f///S//p/+7/5r9//y9e"
-    "+vvf2/ve9///S////19v///r9/f2/++/33/+P/S/+/f98/95v/f2/83f+f/+/7+3///+s2//n7S"
-    "//+73vO1f+z/6/3N9+7/3vv///X6/3++/++/+73f/33//f73////53/36Xv973fX739///3/+1v3"
-    "f//7///u///S11df+vv5//997v/f/f/d///v/+fvff///Xv33/ffvf1//f/3e///95f+8/ff3+/f"
-    "/5v92/+/vff33X/9///vv//3v///n3/3993/771/v3/f/e/33//+v33e+//vv/e//7Xff7//v++/""//r7////f/e/f//7+f+77/f7///v/3+9+9///e///7e//r////f3++/7/+t///f/+9v/+"
-    "3//f3/+/vv79///83f////7fff/f+d///vv//Xv/73/3f+//e7/315e21td7r6383aXz3ve+1u"
-    "m6vve8s3fO3S2Xm/3j/X++97v38+5vX/5e+9u+e8f57/3d8315aW5dOf/vTcfe/e3O39/v6v9//t"
-    "/m1//Xb/vf21557/mXrtfne9vIu/3n30z//1v65/m3/b28/u0+/37f43/1///+2//vvq27e+1bvd"
-    "O+v1j7f/i//9Pvf1zff+/m7X6333y9/2vf97/7//+Ove/tffvv77/u/fvv2+/v3v3e/3233x7b/i"
-    "e4/ff3v73//+/f//u3e/y9++/a//m3/dO9/y2ve81fPz43X9a9/+f1///vd3/9y4122++u4/d3+3"
-    "3Xvv/f412x2/+tWv3vP33vPe/32//+/+/S9/28/O9/rL31539S//O+//+/3v/932zW/31a9/mO73"
-    "r5u5f/+vev3t+v/3m/m///9f3d///d///O9/91/s3m3//7e3t/j///9vf3e39+7/y/140++y3e2y"
-    "9fX/y3vf16//vd/t/9+v219p7664+9/fef93e3fv35588knX4Pvuu++e3/m/3O+//56+/dvd3X31"
-    "P/2+1/N7f++mefvd48/6X/f++19/5S/3a79r1558e/s8+e94/Pz++p+/vv1/e+/r973b+/vf8p9m"
-    "8ffb8fX2/m/+3d/911/++/fe/fP/vv3r4u/p+a/1p79623+f139+7e/eeS8/vv5336f3nfe+fe+7"
-    "ve8/X+3e8d/z3+/308v/e17e+/8+/zfe+/n93Xf78v3+a//ve/7//19//d+//r/+/ve/t//+//vf"
-    "v3///9vf+//9/839/++/fff97793//z/fe++/n/z/b+/v/+99f99/9e33///f3u/f+/f//vv59+""ff7//e/7vf+/9/+997b//+73v37///n7f/e/fe///9fe+f//fff///f31ff8333ff9///3fvv"
-    "fff/1///97b3d3vvd2vvff/vf++///ee8/3u73/f3//f+/fffd//dff/v/+7/v//f/ff/Xf9e/v/"
-    "3f/9vf/35vf///vf/5e/e++v+f/n/f/3vvfe7+/+//vf5795eXlt37a1fdfv/e2v2761895684++"
-    "m3m+/yvvd3m4+Mfff9e++/Xvdfe38f+/3a+//r3+fe7fvNfvf14999x3zeM/e8+/1Nvd8f4/3///"
-    "m//++f26f//15//+v3559//N5e+u3/i///m///+///++/v/++/e39+X3///vvf98+/e99333/7fX"
-    "39//vv3+3//f/3/f9//3f7/3/n//m///e3//3vff/73+//3ff+/vf/9/f3//f++33f+//f/33d//"
-    "7X33e5/1/f/5e73e2vd7e0e+/9+Xf93fff3f///dfff3++/fe/+v3/+vf17//3f/33/vf/v3+f++"
-    "9vf+/+//ffvv/e/+/73d//3/997v/3vv/9e73f//+/3995f/e9///5e+//+vf9/+//e99/++/f/X"
-    "f///vv/fe/9vv/e///+/f3///f///v//+9////33vvff+3f///7ff+//fff/dff/3f/e++f/vv+"
-    "//f3+/d/3e+/vff/f3e/9ff13e3ttfe+fX/e7s///e57f///ff5//fXff3d///d9ffv/f9f3f3e7"
-    "2/v5fff1f///9e3d//fff2+//33///3vf5+//vvf///vf///v2vff+/e7v///+//933/ef///f3f"
-    "/v/93f/+9vv9ff3fff+//ffffffe/vvd//f9/v/f/f3v3ff/d//fffv///fe/7++/e//73////f9"
-    "/9/e++f99ff9///ff/f1///f//d////fXvfe731f//f//ef3e+++/9///+f31953Xvv/33v/vff"
-    "ff///v3e///e///939/3v5//+f+/99/f/1114+8X//05ef3v4/f53u//d7ff+/fffff//3ff13///"
-    "3++v31//f//+f3fff1e+//937/77e////e5f//3/f95333f///vffe/3f3fe27e02d33/X4fe397"
-    "9e/f+/eXnvvvf/fffv+//f+/f//7v+ffff/5///3//d7ff+ffv7/1/ffff//3ve++fvvf5//vXfe"
-    "81/v+9/ff25vve8fXfe73vvfvv/f//f/3/1+/vfffe+//e3vv//fe3//vvv///fe++/v/21tbZ++/"
-    "eeXff1/9fffe+//fef++75Xvf+/fvv3v3f//3vfff1//fev3vf/f17e33e+++fXX3vvf115599d/""3Xfe133XXe3/+/f3/e/33ff17X/X/9v/+eeefvfbv/f/3vv3e7v///f/33ef///f//ffffvffe/+""v//ff/f9fXXfe/3fff3ve3v/d3fef1/fe//ff+ee/ff733ve213vfXX//e++93ve1119/f33198X"
-    "lff/++fX3313vXXff1v3//ef3v8f//fe3Xffff133ef/fffve5/3f/ff73/vffeev333ef13vff3"
-    "3ff1Xfe11Xff/fffve/fffvvffv3vvvfXvff/vX315++vv1vf/+1XXv9/3XXvv3119fffXXf3fe+""fve33333/ve7vfffe/X//fffve///XXf15//ffe++v3ff1fef/ef17/efffe3fe+fe3veff3v+"
-    "f/effXXffffve1vf+f//fe33fffe11vfff/f/XXvffffvef/fe3ff3vffe//XXvffe9Xffffffee"
-    "v///ef/efffe1vf/fef7XXvvXffffffee1vfffXXve/ee133/vefef11XXffffeffe3ff15ff3ff"
-    "ffe1ffXXffffvfffe//fe3ffe+ee2ef3XXvfefffeefffeeffveef3vefeeeee9///vvfeeeeeeee"
-    "eeeeeeeeeeeef/98="
-)
-
-def get_logo_image():
-    try:
-        img_data = base64.b64decode(TAV_LOGO_PNG_BASE64)
-        img_stream = io.BytesIO(img_data)
-        return Image(img_stream, width=170, height=40)
-    except Exception:
-        return None
+# --- PDF İÇİN VEKTÖREL TAV LOGO ÇİZİM FONKSİYONU ---
+def draw_tav_logo():
+    d = Drawing(160, 45)
+    
+    # 1. Mavi Arka Plan Kartı
+    d.add(Rect(0, 0, 160, 42, fillColor=colors.HexColor("#1A365D"), strokeColor=None, rx=4, ry=4))
+    
+    # 2. TAV Ana Metni
+    d.add(String(12, 14, "TAV", fontName="Helvetica-Bold", fontSize=24, fillColor=colors.white))
+    
+    # 3. Kırmızı Vurgu Çizgisi
+    d.add(Rect(72, 12, 4, 20, fillColor=colors.HexColor("#E53E3E"), strokeColor=None))
+    
+    # 4. Technologies / Airports Alt Metni
+    g = Group()
+    g.add(String(82, 22, "TECHNOLOGIES", fontName="Helvetica-Bold", fontSize=7, fillColor=colors.HexColor("#CBD5E0")))
+    g.add(String(82, 13, "AIRPORTS", fontName="Helvetica-Bold", fontSize=6, fillColor=colors.HexColor("#A0AEC0")))
+    d.add(g)
+    
+    return d
 
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
     buffer = io.BytesIO()
@@ -618,11 +548,9 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
 
     proj_title = project_name if project_name.strip() else "-"
 
-    # BASE64 PNG AMBLEM LOGO
-    logo_img = get_logo_image()
-    if logo_img:
-        story.append(logo_img)
-        story.append(Spacer(1, 12))
+    # KODLA ÇİZİLEN GARANTİ LOGO EKLENİYOR
+    story.append(draw_tav_logo())
+    story.append(Spacer(1, 10))
 
     story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['project_name_label']}:</b> {proj_title}"), normal_style))
