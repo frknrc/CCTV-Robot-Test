@@ -35,25 +35,54 @@ st.markdown(hide_st_style, unsafe_allow_html=True)
 # --- KULLANICININ TARAYICI SAAT DİLİMİNİ OTOMATİK YAKALAMA ---
 user_timezone_str = st_javascript("Intl.DateTimeFormat().resolvedOptions().timeZone")
 
-# --- ÜLKE VE ŞEHİR VERİSİ ---
+# --- ÜLKE VE ŞEHİR VERİSİ (ÇOK DİLLİ) ---
 LOCATION_DATA = {
-    "Türkiye": ["İstanbul", "Ankara", "İzmir", "Antalya", "Bursa", "Adana", "Gaziantep", "Trabzon", "Muğla", "Diğer"],
-    "Kazakistan": ["Astana", "Almatı", "Çimkent", "Aktau", "Atırau", "Karağandı", "Aktöbe", "Diğer"],
-    "Azerbaycan": ["Bakü", "Gence", "Sumgayıt", "Hocalı", "Diğer"],
-    "Gürcistan": ["Tiflis", "Batum", "Kutais", "Diğer"],
-    "Suudi Arabistan": ["Riyad", "Cidde", "Mekke", "Medine", "Dammam", "Diğer"],
-    "Birleşik Arap Emirlikleri": ["Dubai", "Abu Dabi", "Şarja", "Diğer"],
-    "Katar": ["Doha", "Al Rayyan", "Diğer"],
-    "Özbekistan": ["Taşkent", "Semerkand", "Buhara", "Diğer"],
-    "Kırgızistan": ["Bişkek", "Oş", "Diğer"],
-    "Almanya": ["Berlin", "Münih", "Frankfurt", "Hamburg", "Diğer"],
-    "Diğer / Other": ["Diğer / Other"]
+    "TR": {
+        "Türkiye": ["İstanbul", "Ankara", "İzmir", "Antalya", "Bursa", "Adana", "Gaziantep", "Trabzon", "Muğla", "Diğer"],
+        "Kazakistan": ["Astana", "Almatı", "Çimkent", "Aktau", "Atırau", "Karağandı", "Aktöbe", "Diğer"],
+        "Azerbaycan": ["Bakü", "Gence", "Sumgayıt", "Hocalı", "Diğer"],
+        "Gürcistan": ["Tiflis", "Batum", "Kutais", "Diğer"],
+        "Suudi Arabistan": ["Riyad", "Cidde", "Mekke", "Medine", "Dammam", "Diğer"],
+        "Birleşik Arap Emirlikleri": ["Dubai", "Abu Dabi", "Şarja", "Diğer"],
+        "Katar": ["Doha", "Al Rayyan", "Diğer"],
+        "Özbekistan": ["Taşkent", "Semerkand", "Buhara", "Diğer"],
+        "Kırgızistan": ["Bişkek", "Oş", "Diğer"],
+        "Almanya": ["Berlin", "Münih", "Frankfurt", "Hamburg", "Diğer"],
+        "Diğer": ["Diğer"]
+    },
+    "EN": {
+        "Turkey": ["Istanbul", "Ankara", "Izmir", "Antalya", "Bursa", "Adana", "Gaziantep", "Trabzon", "Mugla", "Other"],
+        "Kazakhstan": ["Astana", "Almaty", "Shymkent", "Aktau", "Atyrau", "Karaganda", "Aktobe", "Other"],
+        "Azerbaijan": ["Baku", "Ganja", "Sumqayit", "Khankendi", "Other"],
+        "Georgia": ["Tbilisi", "Batumi", "Kutaisi", "Other"],
+        "Saudi Arabia": ["Riyadh", "Jeddah", "Mecca", "Medina", "Dammam", "Other"],
+        "United Arab Emirates": ["Dubai", "Abu Dhabi", "Sharjah", "Other"],
+        "Qatar": ["Doha", "Al Rayyan", "Other"],
+        "Uzbekistan": ["Tashkent", "Samarkand", "Bukhara", "Other"],
+        "Kyrgyzstan": ["Bishkek", "Osh", "Other"],
+        "Germany": ["Berlin", "Munich", "Frankfurt", "Hamburg", "Other"],
+        "Other": ["Other"]
+    },
+    "KK": {
+        "Түркия": ["Ыстанбұл", "Анкара", "Измир", "Анталия", "Бурса", "Адана", "Газиантеп", "Трабзон", "Мугла", "Басқа"],
+        "Қазақстан": ["Астана", "Алматы", "Шымкент", "Ақтау", "Атырау", "Қарағанды", "Ақтөбе", "Басқа"],
+        "Әзірбайжан": ["Баку", "Гәнжә", "Сумғайыт", "Ханкенди", "Басқа"],
+        "Грузия": ["Тбилиси", "Батуми", "Кутаиси", "Басқа"],
+        "Сауд Арабиясы": ["Эр-Рияд", "Джидда", "Мекке", "Медина", "Даммам", "Басқа"],
+        "Біріккен Араб Әмірліктері": ["Дубай", "Абу-Даби", "Шарджа", "Басқа"],
+        "Катар": ["Доха", "Аль-Райян", "Басқа"],
+        "Өзбекстан": ["Ташкент", "Самарқанд", "Бұхара", "Басқа"],
+        "Қырғызстан": ["Бішкек", "Ош", "Басқа"],
+        "Германия": ["Берлин", "Мюнхен", "Франкфурт", "Гамбург", "Басқа"],
+        "Басқа": ["Басқа"]
+    }
 }
 
 # --- ÇEVİRİ SÖZLÜĞÜ (TR / EN / KK) ---
 TEXTS = {
     "TR": {
         "page_title": "Zayıf Akım Sistem Planlama Botu",
+        "pdf_title": "Zayıf Akım Sistem Planlama Raporu",
         "caption": "Lütfen projenize ait verileri girerek donanım ve altyapı ihtiyaç raporunu oluşturun.",
         "project_name_label": "📌 Havalimanı / Proje Adı",
         "project_name_placeholder": "Proje adını giriniz...",
@@ -71,11 +100,32 @@ TEXTS = {
         "inputs_header": "📋 Girdi Parametreleri (Tasarım Kriterleri)",
         "outputs_header": "📊 Hesaplanan İhtiyaçlar (Sistem Çıktıları)",
         "redundancy_label": "⚙️ Yedeklilik / Marjin Oranı (%)",
+        "col_input_param": "Girdi Parametresi",
+        "col_input_val": "Değer",
         "col_metric": "Bileşen / Metrik",
         "col_base": "Ana İhtiyaç",
         "col_redundancy": "Yedek Miktar",
         "col_total": "Toplam Miktar",
         "col_unit": "Birim",
+        "units": {
+            "pcs": "Adet",
+            "m2": "m²",
+            "meter": "Metre",
+            "point": "Nokta",
+            "lane": "Şerit",
+            "desk": "Masa",
+            "day": "Gün",
+            "user": "Kullanıcı",
+            "pair": "Çift",
+            "loop": "Loop",
+            "zone": "Zone",
+            "tb": "TB",
+            "license": "Lisans",
+            "watt": "Watt",
+            "yes": "Evet",
+            "no": "Hayır",
+            "none": "-"
+        },
         "cctv_title": "🎥 CCTV Kamera Güvenlik Sistemi",
         "cctv_scope": "Havalimanı Kapsamı:",
         "cctv_opt1": "Uluslararası Transit Hub (Yüksek Güvenlik / Yoğun Yolcu)",
@@ -93,6 +143,16 @@ TEXTS = {
         "cctv_rem": "Uzak İzleme Noktası Sayısı",
         "cctv_days": "Kayıt Saklama Süresi (Gün)",
         "cctv_res": "Kamera Kalite Standardı",
+        "cctv_out": {
+            "indoor": "İç Mekan Kameraları",
+            "fence": "Çevre Güvenlik Kameraları",
+            "checkpoint": "Kontrol Noktası Kameraları",
+            "anpr": "ANPR (Plaka Tanıma) Kameraları",
+            "total": "TOPLAM KAMERA SAYISI",
+            "storage": "Gerekli Depolama Alanı (Net)",
+            "switch": "24-Port PoE Switch İhtiyacı",
+            "license": "VMS Lisans Sayısı"
+        },
         "acs_title": "🚪 Kartlı Geçiş ve Turnike Sistemi (ACS)",
         "acs_doors_sec": "Kapı Tip ve Sayıları",
         "acs_s_doors": "Tek Kanat Kontrollü Kapı Sayısı",
@@ -102,10 +162,27 @@ TEXTS = {
         "acs_users": "Sisteme Tanımlanacak Toplam Kartlı Kullanıcı Sayısı",
         "acs_face": "Yüz Tanıma Terminali Adedi",
         "acs_finger": "Parmak İzi Okuyucu Adedi",
+        "acs_out": {
+            "doors": "Kontrollü Kapı Sayısı (Tek + Çift)",
+            "turnstiles": "Turnikeler",
+            "readers": "Kart Okuyucular",
+            "face": "Yüz Tanıma Terminalleri",
+            "finger": "Parmak İzi Okuyucular",
+            "controllers": "4-Kapılı Geçiş Kontrol Paneli",
+            "users": "Tanımlı Kullanıcı Kapasitesi"
+        },
         "fas_title": "🚨 Yangın Algılama ve İhbar Sistemi (FAS)",
         "fas_sqm": "Yangın Algılama Yapılacak Kapalı Alan (m²)",
         "fas_rf": "Asma Tavan ve Yükseltilmiş Taban İçi Dedektörler Dahil Edilsin",
         "fas_beam": "Yüksek Tavan / Hangar İçin Işın (Beam) Dedektör Çifti Sayısı",
+        "fas_out": {
+            "detectors": "Duman / Sıcaklık Dedektörleri",
+            "beam": "Işın (Beam) Dedektör Çifti",
+            "buttons": "Yangın İhbar Butonları",
+            "sounders": "Flaşörlü Sirenler",
+            "loops": "Toplam Çevrim (Loop) Sayısı",
+            "panels": "Yangın Kontrol Paneli (8-Loop)"
+        },
         "pava_title": "📢 Acil Anons ve Seslendirme Sistemi (PA/VA)",
         "pava_sqm": "Anons Yapılacak Toplam Kapalı Alan (m²)",
         "pava_zones": "Bağımsız Anons Bölgesi (Zone) Sayısı",
@@ -113,6 +190,12 @@ TEXTS = {
         "pava_env_std": "Standart Terminal Alanı (70-75 dB)",
         "pava_env_noisy": "Gürültülü Otopark / Teknik Alan (80-85 dB)",
         "pava_env_quiet": "Sessiz Ofis / Yönetim Alanı (60 dB)",
+        "pava_out": {
+            "speakers": "Hoparlör İhtiyacı (Tavan/Duvar)",
+            "power": "Tahmini Güç İhtiyacı",
+            "amps": "1000W Güç Anfisi İhtiyacı",
+            "zones": "Anons Bölgesi (Zone) Sayısı"
+        },
         "system_names": {
             "CCTV": "CCTV (Kamera Güvenlik)",
             "ACS": "ACS (Kartlı Geçiş & Turnike)",
@@ -122,6 +205,7 @@ TEXTS = {
     },
     "EN": {
         "page_title": "ELV Systems Planning Bot",
+        "pdf_title": "ELV Systems Planning Report",
         "caption": "Please enter your project details to generate the hardware and infrastructure requirements report.",
         "project_name_label": "📌 Airport / Project Name",
         "project_name_placeholder": "Enter project name...",
@@ -139,11 +223,32 @@ TEXTS = {
         "inputs_header": "📋 Input Parameters (Design Criteria)",
         "outputs_header": "📊 Calculated Requirements (System Outputs)",
         "redundancy_label": "⚙️ Redundancy / Margin Rate (%)",
+        "col_input_param": "Input Parameter",
+        "col_input_val": "Value",
         "col_metric": "Component / Metric",
         "col_base": "Base Requirement",
         "col_redundancy": "Redundant Qty",
         "col_total": "Total Qty",
         "col_unit": "Unit",
+        "units": {
+            "pcs": "Pcs",
+            "m2": "m²",
+            "meter": "Meters",
+            "point": "Point",
+            "lane": "Lane",
+            "desk": "Desk",
+            "day": "Days",
+            "user": "Users",
+            "pair": "Pair",
+            "loop": "Loop",
+            "zone": "Zone",
+            "tb": "TB",
+            "license": "License",
+            "watt": "Watt",
+            "yes": "Yes",
+            "no": "No",
+            "none": "-"
+        },
         "cctv_title": "🎥 CCTV Surveillance System",
         "cctv_scope": "Airport Scope:",
         "cctv_opt1": "International Transit Hub (High Security / High Traffic)",
@@ -161,6 +266,16 @@ TEXTS = {
         "cctv_rem": "Remote Viewing Stations Count",
         "cctv_days": "Storage Retention (Days)",
         "cctv_res": "Camera Quality Standard",
+        "cctv_out": {
+            "indoor": "Indoor Cameras",
+            "fence": "Perimeter Security Cameras",
+            "checkpoint": "Checkpoint Cameras",
+            "anpr": "ANPR (Plate Recognition) Cameras",
+            "total": "TOTAL CAMERA COUNT",
+            "storage": "Required Storage Area (Net)",
+            "switch": "24-Port PoE Switch Requirement",
+            "license": "VMS License Count"
+        },
         "acs_title": "🚪 Access Control & Turnstile System (ACS)",
         "acs_doors_sec": "Door Types and Quantities",
         "acs_s_doors": "Single-Leaf Controlled Doors",
@@ -170,10 +285,27 @@ TEXTS = {
         "acs_users": "Total Cardholder Users to Register",
         "acs_face": "Face Recognition Terminals Count",
         "acs_finger": "Fingerprint Readers Count",
+        "acs_out": {
+            "doors": "Controlled Doors Count (Single + Double)",
+            "turnstiles": "Turnstiles",
+            "readers": "Card Readers",
+            "face": "Face Recognition Terminals",
+            "finger": "Fingerprint Readers",
+            "controllers": "4-Door Access Control Panels",
+            "users": "Registered User Capacity"
+        },
         "fas_title": "🚨 Fire Alarm System (FAS)",
         "fas_sqm": "Covered Fire Detection Area (m²)",
         "fas_rf": "Include False Ceiling and Raised Floor Detectors",
         "fas_beam": "Beam Detector Pairs (High Ceiling / Hangar)",
+        "fas_out": {
+            "detectors": "Smoke / Heat Detectors",
+            "beam": "Beam Detector Pairs",
+            "buttons": "Manual Call Points",
+            "sounders": "Flashing Sounders",
+            "loops": "Total Loop Count",
+            "panels": "Fire Alarm Control Panels (8-Loop)"
+        },
         "pava_title": "📢 Public Address & Voice Alarm System (PA/VA)",
         "pava_sqm": "Public Address Covered Area (m²)",
         "pava_zones": "Independent Announcement Zones",
@@ -181,6 +313,12 @@ TEXTS = {
         "pava_env_std": "Standard Terminal Area (70-75 dB)",
         "pava_env_noisy": "Noisy Parking / Technical Area (80-85 dB)",
         "pava_env_quiet": "Quiet Office / Management Area (60 dB)",
+        "pava_out": {
+            "speakers": "Loudspeakers Requirement (Ceiling/Wall)",
+            "power": "Estimated Power Requirement",
+            "amps": "1000W Power Amplifiers Requirement",
+            "zones": "Announcement Zones Count"
+        },
         "system_names": {
             "CCTV": "CCTV Surveillance",
             "ACS": "Access Control System (ACS)",
@@ -190,6 +328,7 @@ TEXTS = {
     },
     "KK": {
         "page_title": "Әлсіз тоқ жүйелерін жоспарлау боты",
+        "pdf_title": "Әлсіз тоқ жүйелерін жоспарлау есебі",
         "caption": "Жабдық пен инфрақұрылым талаптарының есебін жасау үшін жоба мәліметтерін енгізіңіз.",
         "project_name_label": "📌 Әуежай / Жоба атауы",
         "project_name_placeholder": "Жоба атауын енгізіңіз...",
@@ -207,11 +346,32 @@ TEXTS = {
         "inputs_header": "📋 Енгізілген параметрлер (Жобалау критерийлері)",
         "outputs_header": "📊 Есептелген қажеттіліктер (Жүйе нәтижелері)",
         "redundancy_label": "⚙️ Резервтеу / Маржа коэффициенті (%)",
+        "col_input_param": "Енгізу параметрі",
+        "col_input_val": "Мәні",
         "col_metric": "Компонент / Метрика",
         "col_base": "Негізгі қажеттілік",
         "col_redundancy": "Резервтік мөлшер",
         "col_total": "Жалпы мөлшер",
         "col_unit": "Өлшем бірлігі",
+        "units": {
+            "pcs": "Дана",
+            "m2": "м²",
+            "meter": "Метр",
+            "point": "Нүкте",
+            "lane": "Жолақ",
+            "desk": "Үстел",
+            "day": "Күн",
+            "user": "Пайдаланушы",
+            "pair": "Жұп",
+            "loop": "Loop",
+            "zone": "Zone",
+            "tb": "TB",
+            "license": "Лицензия",
+            "watt": "Ватт",
+            "yes": "Иә",
+            "no": "Жоқ",
+            "none": "-"
+        },
         "cctv_title": "🎥 CCTV Бейнебақылау жүйесі",
         "cctv_scope": "Әуежай ауқымы:",
         "cctv_opt1": "Халықаралық транзиттік хаб (Жоғары қауіпсіздік / Қарқынды)",
@@ -229,6 +389,16 @@ TEXTS = {
         "cctv_rem": "Қашықтан бақылау нүктелерінің саны",
         "cctv_days": "Бейнежазбаны сақтау мерзімі (Күн)",
         "cctv_res": "Камера сапасының стандарты",
+        "cctv_out": {
+            "indoor": "Ішкі камералар",
+            "fence": "Периметрлік қауіпсіздік камералары",
+            "checkpoint": "Бақылау пунктінің камералары",
+            "anpr": "ANPR (Нөмірді тану) камералары",
+            "total": "ЖАЛПЫ КАМЕРА САНЫ",
+            "storage": "Қажетті сақтау орны (Нетто)",
+            "switch": "24-Портты PoE Switch қажеттілігі",
+            "license": "VMS лицензиялар саны"
+        },
         "acs_title": "🚪 Рұқсатты бақылау және турникет жүйесі (ACS)",
         "acs_doors_sec": "Есік түрлері мен саны",
         "acs_s_doors": "Бір жақтаулы бақыланатын есіктер",
@@ -238,10 +408,27 @@ TEXTS = {
         "acs_users": "Тіркелетін жалпы карта пайдаланушыларының саны",
         "acs_face": "Бетті тану терминалдарының саны",
         "acs_finger": "Саусақ изін оқу құрылғыларының саны",
+        "acs_out": {
+            "doors": "Бақыланатын есіктер саны (Бір + Екі жақтаулы)",
+            "turnstiles": "Турникеттер",
+            "readers": "Карта оқу құрылғылары",
+            "face": "Бетті тану терминалдары",
+            "finger": "Саусақ изін оқу құрылғылары",
+            "controllers": "4-Есікті өтуді басқару панелі",
+            "users": "Тіркелген пайдаланушы сыйымдылығы"
+        },
         "fas_title": "🚨 Өрт дабылы жүйесі (FAS)",
         "fas_sqm": "Өрт дабылы орнатылатын жабық аудан (м²)",
         "fas_rf": "Аспалы төбе мен көтерілген еден ішіндегі датчиктер қосылсын",
         "fas_beam": "Биік төбе/Ангар үшін сәулелік (Beam) датчиктер саны",
+        "fas_out": {
+            "detectors": "Tүтін / Температура датчиктері",
+            "beam": "Сәулелік (Beam) датчиктер жұбы",
+            "buttons": "Өрт дабылы батырмалары",
+            "sounders": "Жарқылдауық сиреналар",
+            "loops": "Жалпы контур (Loop) саны",
+            "panels": "Өрт басқару панелі (8-Loop)"
+        },
         "pava_title": "📢 Дауыстық хабарлау және эвакуация жүйесі (PA/VA)",
         "pava_sqm": "Хабарлау жасалатын жалпы жабық аудан (м²)",
         "pava_zones": "Тәуелсіз хабарлау аймақтарының (Zone) саны",
@@ -249,6 +436,12 @@ TEXTS = {
         "pava_env_std": "Стандартты терминал аймағы (70-75 dB)",
         "pava_env_noisy": "Шулы автотұрақ / Техникалық аймақ (80-85 dB)",
         "pava_env_quiet": "Тыныш офис / Басқару аймағы (60 dB)",
+        "pava_out": {
+            "speakers": "Дауыс зорайтқыш қажеттілігі (Төбе/Қабырға)",
+            "power": "Божалған қуат қажеттілігі",
+            "amps": "1000W Қуат күшейткішінің қажеттілігі",
+            "zones": "Хабарлау аймақтарының (Zone) саны"
+        },
         "system_names": {
             "CCTV": "CCTV (Бейнебақылау жүйесі)",
             "ACS": "ACS (Рұқсатты бақылау жүйесі)",
@@ -326,14 +519,14 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
 
     proj_title = project_name if project_name.strip() else "-"
 
-    story.append(Paragraph(safe_str("Zayıf Akım Sistem Planlama Raporu"), title_style))
-    story.append(Paragraph(safe_str(f"<b>Proje Adı:</b> {proj_title}"), normal_style))
+    story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
+    story.append(Paragraph(safe_str(f"<b>{t_labels['project_name_label']}:</b> {proj_title}"), normal_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['location_label']}:</b> {country} / {city}"), normal_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['report_date_label']}:</b> {report_datetime_str}"), normal_style))
     story.append(Spacer(1, 12))
 
     for sys_key, df_out in results.items():
-        story.append(Paragraph(safe_str(f"<b>{sys_key} Metrikleri</b>"), subtitle_style))
+        story.append(Paragraph(safe_str(f"<b>{sys_key}</b>"), subtitle_style))
 
         # Girdiler Tablosu
         if sys_key in inputs_summary:
@@ -421,12 +614,13 @@ with col_title:
         )
     
     t = TEXTS[selected_lang]
+    current_locations = LOCATION_DATA[selected_lang]
 
     with c_country:
-        selected_country = st.selectbox(t["country_label"], list(LOCATION_DATA.keys()), index=0)
+        selected_country = st.selectbox(t["country_label"], list(current_locations.keys()), index=0)
 
     with c_city:
-        cities = LOCATION_DATA.get(selected_country, ["Diğer"])
+        cities = current_locations.get(selected_country, [t["units"]["none"]])
         selected_city = st.selectbox(t["city_label"], cities, index=0)
 
 st.title(t["page_title"])
@@ -570,7 +764,7 @@ else:
 
         now_str = datetime.now(user_tz).strftime("%d.%m.%Y - %H:%M")
 
-        display_proj_name = project_name.strip() if project_name.strip() else "Proje"
+        display_proj_name = project_name.strip() if project_name.strip() else "-"
 
         for sys in selected_systems:
             # 1. CCTV HESAPLAMA
@@ -592,31 +786,31 @@ else:
 
                 poe_switches_24p = math.ceil(total_cams / 20)
 
-                inputs_summary['CCTV'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["cctv_scope"], "Değer": inputs.get('cctv_airport_type'), "Birim": "-"},
-                    {"Girdi Parametresi": t["cctv_sqm"], "Değer": inputs.get('cctv_sqm'), "Birim": "m²"},
-                    {"Girdi Parametresi": t["cctv_checkpoints"], "Değer": inputs.get('cctv_checkpoints'), "Birim": "Nokta"},
-                    {"Girdi Parametresi": t["cctv_fence"], "Değer": inputs.get('cctv_fence_m'), "Birim": "Metre"},
-                    {"Girdi Parametresi": t["cctv_lanes"], "Değer": inputs.get('cctv_lanes'), "Birim": "Şerit"},
-                    {"Girdi Parametresi": t["cctv_cr"], "Değer": inputs.get('cctv_control_rooms'), "Birim": "Adet"},
-                    {"Girdi Parametresi": t["cctv_op"], "Değer": inputs.get('cctv_operators'), "Birim": "Masa"},
-                    {"Girdi Parametresi": t["cctv_days"], "Değer": inputs.get('cctv_storage_days'), "Birim": "Gün"},
-                    {"Girdi Parametresi": t["cctv_res"], "Değer": inputs.get('cctv_resolution'), "Birim": "-"},
-                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"}
+                inputs_summary[t["system_names"]["CCTV"]] = pd.DataFrame([
+                    {t["col_input_param"]: t["cctv_scope"], t["col_input_val"]: inputs.get('cctv_airport_type'), t["col_unit"]: t["units"]["none"]},
+                    {t["col_input_param"]: t["cctv_sqm"], t["col_input_val"]: inputs.get('cctv_sqm'), t["col_unit"]: t["units"]["m2"]},
+                    {t["col_input_param"]: t["cctv_checkpoints"], t["col_input_val"]: inputs.get('cctv_checkpoints'), t["col_unit"]: t["units"]["point"]},
+                    {t["col_input_param"]: t["cctv_fence"], t["col_input_val"]: inputs.get('cctv_fence_m'), t["col_unit"]: t["units"]["meter"]},
+                    {t["col_input_param"]: t["cctv_lanes"], t["col_input_val"]: inputs.get('cctv_lanes'), t["col_unit"]: t["units"]["lane"]},
+                    {t["col_input_param"]: t["cctv_cr"], t["col_input_val"]: inputs.get('cctv_control_rooms'), t["col_unit"]: t["units"]["pcs"]},
+                    {t["col_input_param"]: t["cctv_op"], t["col_input_val"]: inputs.get('cctv_operators'), t["col_unit"]: t["units"]["desk"]},
+                    {t["col_input_param"]: t["cctv_days"], t["col_input_val"]: inputs.get('cctv_storage_days'), t["col_unit"]: t["units"]["day"]},
+                    {t["col_input_param"]: t["cctv_res"], t["col_input_val"]: inputs.get('cctv_resolution'), t["col_unit"]: t["units"]["none"]},
+                    {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
                 ])
 
                 items_data = [
-                    ("İç Mekan Kameraları", indoor_cams, "Adet"),
-                    ("Çevre Güvenlik Kameraları", fence_cams, "Adet"),
-                    ("Kontrol Noktası Kameraları", checkpoint_cams, "Adet"),
-                    ("ANPR (Plaka Tanıma) Kameraları", anpr_cams, "Adet"),
-                    ("TOPLAM KAMERA SAYISI", total_cams, "Adet"),
-                    ("Gerekli Depolama Alanı (Net)", storage_tb, "TB"),
-                    ("24-Port PoE Switch İhtiyacı", poe_switches_24p, "Adet"),
-                    ("VMS Lisans Sayısı", total_cams, "Lisans")
+                    (t["cctv_out"]["indoor"], indoor_cams, t["units"]["pcs"]),
+                    (t["cctv_out"]["fence"], fence_cams, t["units"]["pcs"]),
+                    (t["cctv_out"]["checkpoint"], checkpoint_cams, t["units"]["pcs"]),
+                    (t["cctv_out"]["anpr"], anpr_cams, t["units"]["pcs"]),
+                    (t["cctv_out"]["total"], total_cams, t["units"]["pcs"]),
+                    (t["cctv_out"]["storage"], storage_tb, t["units"]["tb"]),
+                    (t["cctv_out"]["switch"], poe_switches_24p, t["units"]["pcs"]),
+                    (t["cctv_out"]["license"], total_cams, t["units"]["license"])
                 ]
 
-                calculated_results['CCTV'] = create_output_df(items_data, red_pct, t)
+                calculated_results[t["system_names"]["CCTV"]] = create_output_df(items_data, red_pct, t)
 
             # 2. ACS HESAPLAMA
             elif t["system_names"]["ACS"] in sys:
@@ -625,27 +819,27 @@ else:
                 readers = (inputs.get('acs_single_doors', 80) * 2) + (inputs.get('acs_double_doors', 20) * 2) + (inputs.get('acs_turnstiles', 16) * 2)
                 controllers = math.ceil((total_doors + inputs.get('acs_turnstiles', 16)) / 4)
 
-                inputs_summary['ACS'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["acs_s_doors"], "Değer": inputs.get('acs_single_doors'), "Birim": "Adet"},
-                    {"Girdi Parametresi": t["acs_d_doors"], "Değer": inputs.get('acs_double_doors'), "Birim": "Adet"},
-                    {"Girdi Parametresi": t["acs_turnstiles"], "Değer": inputs.get('acs_turnstiles'), "Birim": "Adet"},
-                    {"Girdi Parametresi": t["acs_users"], "Değer": inputs.get('acs_users'), "Birim": "Kullanıcı"},
-                    {"Girdi Parametresi": t["acs_face"], "Değer": inputs.get('acs_face_rec_qty'), "Birim": "Adet"},
-                    {"Girdi Parametresi": t["acs_finger"], "Değer": inputs.get('acs_fingerprint_qty'), "Birim": "Adet"},
-                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"}
+                inputs_summary[t["system_names"]["ACS"]] = pd.DataFrame([
+                    {t["col_input_param"]: t["acs_s_doors"], t["col_input_val"]: inputs.get('acs_single_doors'), t["col_unit"]: t["units"]["pcs"]},
+                    {t["col_input_param"]: t["acs_d_doors"], t["col_input_val"]: inputs.get('acs_double_doors'), t["col_unit"]: t["units"]["pcs"]},
+                    {t["col_input_param"]: t["acs_turnstiles"], t["col_input_val"]: inputs.get('acs_turnstiles'), t["col_unit"]: t["units"]["pcs"]},
+                    {t["col_input_param"]: t["acs_users"], t["col_input_val"]: inputs.get('acs_users'), t["col_unit"]: t["units"]["user"]},
+                    {t["col_input_param"]: t["acs_face"], t["col_input_val"]: inputs.get('acs_face_rec_qty'), t["col_unit"]: t["units"]["pcs"]},
+                    {t["col_input_param"]: t["acs_finger"], t["col_input_val"]: inputs.get('acs_fingerprint_qty'), t["col_unit"]: t["units"]["pcs"]},
+                    {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
                 ])
 
                 items_data = [
-                    ("Kontrollü Kapı Sayısı (Tek + Çift)", total_doors, "Adet"),
-                    ("Turnikeler", inputs.get('acs_turnstiles', 16), "Adet"),
-                    ("Kart Okuyucular", readers, "Adet"),
-                    ("Yüz Tanıma Terminalleri", inputs.get('acs_face_rec_qty', 10), "Adet"),
-                    ("Parmak İzi Okuyucular", inputs.get('acs_fingerprint_qty', 15), "Adet"),
-                    ("4-Kapılı Geçiş Kontrol Paneli", controllers, "Adet"),
-                    ("Tanımlı Kullanıcı Kapasitesi", inputs.get('acs_users', 3000), "Kullanıcı")
+                    (t["acs_out"]["doors"], total_doors, t["units"]["pcs"]),
+                    (t["acs_out"]["turnstiles"], inputs.get('acs_turnstiles', 16), t["units"]["pcs"]),
+                    (t["acs_out"]["readers"], readers, t["units"]["pcs"]),
+                    (t["acs_out"]["face"], inputs.get('acs_face_rec_qty', 10), t["units"]["pcs"]),
+                    (t["acs_out"]["finger"], inputs.get('acs_fingerprint_qty', 15), t["units"]["pcs"]),
+                    (t["acs_out"]["controllers"], controllers, t["units"]["pcs"]),
+                    (t["acs_out"]["users"], inputs.get('acs_users', 3000), t["units"]["user"])
                 ]
 
-                calculated_results['ACS'] = create_output_df(items_data, red_pct, t)
+                calculated_results[t["system_names"]["ACS"]] = create_output_df(items_data, red_pct, t)
 
             # 3. FAS HESAPLAMA
             elif t["system_names"]["FAS"] in sys:
@@ -660,23 +854,23 @@ else:
                 loops = math.ceil(base_detectors / 200)
                 panels = math.ceil(loops / 8)
 
-                inputs_summary['FAS'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["fas_sqm"], "Değer": inputs.get('fas_sqm'), "Birim": "m²"},
-                    {"Girdi Parametresi": t["fas_rf"], "Değer": "Evet" if inputs.get('fas_raised_floor') else "Hayır", "Birim": "-"},
-                    {"Girdi Parametresi": t["fas_beam"], "Değer": inputs.get('fas_beam_detectors'), "Birim": "Çift"},
-                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"}
+                inputs_summary[t["system_names"]["FAS"]] = pd.DataFrame([
+                    {t["col_input_param"]: t["fas_sqm"], t["col_input_val"]: inputs.get('fas_sqm'), t["col_unit"]: t["units"]["m2"]},
+                    {t["col_input_param"]: t["fas_rf"], t["col_input_val"]: t["units"]["yes"] if inputs.get('fas_raised_floor') else t["units"]["no"], t["col_unit"]: t["units"]["none"]},
+                    {t["col_input_param"]: t["fas_beam"], t["col_input_val"]: inputs.get('fas_beam_detectors'), t["col_unit"]: t["units"]["pair"]},
+                    {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
                 ])
 
                 items_data = [
-                    ("Duman / Sıcaklık Dedektörleri", base_detectors, "Adet"),
-                    ("Işın (Beam) Dedektör Çifti", inputs.get('fas_beam_detectors', 6), "Çift"),
-                    ("Yangın İhbar Butonları", manual_call_points, "Adet"),
-                    ("Flaşörlü Sirenler", sounders_flashing, "Adet"),
-                    ("Toplam Çevrim (Loop) Sayısı", loops, "Loop"),
-                    ("Yangın Kontrol Paneli (8-Loop)", panels, "Adet")
+                    (t["fas_out"]["detectors"], base_detectors, t["units"]["pcs"]),
+                    (t["fas_out"]["beam"], inputs.get('fas_beam_detectors', 6), t["units"]["pair"]),
+                    (t["fas_out"]["buttons"], manual_call_points, t["units"]["pcs"]),
+                    (t["fas_out"]["sounders"], sounders_flashing, t["units"]["pcs"]),
+                    (t["fas_out"]["loops"], loops, t["units"]["loop"]),
+                    (t["fas_out"]["panels"], panels, t["units"]["pcs"])
                 ]
 
-                calculated_results['FAS'] = create_output_df(items_data, red_pct, t)
+                calculated_results[t["system_names"]["FAS"]] = create_output_df(items_data, red_pct, t)
 
             # 4. PA/VA HESAPLAMA
             elif t["system_names"]["PA/VA"] in sys:
@@ -687,21 +881,21 @@ else:
                 total_power_watts = math.ceil(speakers * watts_per_spk * 1.25)
                 amplifiers = math.ceil(total_power_watts / 1000)
 
-                inputs_summary['PA/VA'] = pd.DataFrame([
-                    {"Girdi Parametresi": t["pava_sqm"], "Değer": inputs.get('pava_sqm'), "Birim": "m²"},
-                    {"Girdi Parametresi": t["pava_zones"], "Değer": inputs.get('pava_zones'), "Birim": "Zone"},
-                    {"Girdi Parametresi": t["pava_env"], "Değer": inputs.get('pava_environment'), "Birim": "-"},
-                    {"Girdi Parametresi": t["redundancy_label"], "Değer": f"%{red_pct}", "Birim": "%"}
+                inputs_summary[t["system_names"]["PA/VA"]] = pd.DataFrame([
+                    {t["col_input_param"]: t["pava_sqm"], t["col_input_val"]: inputs.get('pava_sqm'), t["col_unit"]: t["units"]["m2"]},
+                    {t["col_input_param"]: t["pava_zones"], t["col_input_val"]: inputs.get('pava_zones'), t["col_unit"]: t["units"]["zone"]},
+                    {t["col_input_param"]: t["pava_env"], t["col_input_val"]: inputs.get('pava_environment'), t["col_unit"]: t["units"]["none"]},
+                    {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
                 ])
 
                 items_data = [
-                    ("Hoparlör İhtiyacı (Tavan/Duvar)", speakers, "Adet"),
-                    ("Tahmini Güç İhtiyacı", total_power_watts, "Watt"),
-                    ("1000W Güç Anfisi İhtiyacı", amplifiers, "Adet"),
-                    ("Anons Bölgesi (Zone) Sayısı", inputs.get('pava_zones', 16), "Zone")
+                    (t["pava_out"]["speakers"], speakers, t["units"]["pcs"]),
+                    (t["pava_out"]["power"], total_power_watts, t["units"]["watt"]),
+                    (t["pava_out"]["amps"], amplifiers, t["units"]["pcs"]),
+                    (t["pava_out"]["zones"], inputs.get('pava_zones', 16), t["units"]["zone"])
                 ]
 
-                calculated_results['PA/VA'] = create_output_df(items_data, red_pct, t)
+                calculated_results[t["system_names"]["PA/VA"]] = create_output_df(items_data, red_pct, t)
 
         # --- EKRANDA SONUÇLARI GÖSTERME ---
         st.success(t["report_success"].format(project=display_proj_name))
@@ -730,7 +924,7 @@ else:
             t_labels=t
         )
 
-        pdf_filename = f"{display_proj_name.replace(' ', '_')}_Zayif_Akim_Raporu.pdf"
+        pdf_filename = f"{display_proj_name.replace(' ', '_')}_Report.pdf"
 
         st.download_button(
             label=t["download_pdf_btn"],
