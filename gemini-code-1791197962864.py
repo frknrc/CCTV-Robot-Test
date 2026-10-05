@@ -9,7 +9,7 @@ from streamlit_javascript import st_javascript
 
 # PDF Oluşturma Kütüphaneleri
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
@@ -58,7 +58,7 @@ LOCATION_DATA = {
         "Saudi Arabia": ["Riyadh", "Jeddah", "Mecca", "Medina", "Dammam", "Other"],
         "United Arab Emirates": ["Dubai", "Abu Dhabi", "Sharjah", "Other"],
         "Qatar": ["Doha", "Al Rayyan", "Other"],
-        "Uzbekistan": ["Tashkent", "Samarkand", "Bukhara", "Other"],
+        "Uzbekistan": ["Tashkent", "Samarkand", "Buhara", "Other"],
         "Kyrgyzstan": ["Bishkek", "Osh", "Other"],
         "Germany": ["Berlin", "Munich", "Frankfurt", "Hamburg", "Other"],
         "Other": ["Other"]
@@ -524,6 +524,14 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
     )
 
     proj_title = project_name if project_name.strip() else "-"
+
+    # LOGO EKLENMESİ
+    logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
+    try:
+        story.append(Image(logo_url, width=160, height=50))
+        story.append(Spacer(1, 10))
+    except Exception:
+        pass
 
     story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
     story.append(Paragraph(safe_str(f"<b>{t_labels['project_name_label']}:</b> {proj_title}"), normal_style))
