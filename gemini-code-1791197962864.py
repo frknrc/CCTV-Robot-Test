@@ -259,29 +259,29 @@ def generate_pdf(project_name, results):
     story.append(Paragraph(safe_str(f"<b>Proje Adı:</b> {project_name}"), normal_style))
     story.append(Spacer(1, 15))
 
-   for sys_key, df in results.items():
-    story.append(Paragraph(safe_str(f"<b>{sys_key} Metrikleri</b>"), subtitle_style))
+    for sys_key, df in results.items():
+        story.append(Paragraph(safe_str(f"<b>{sys_key} Metrikleri</b>"), subtitle_style))
 
-    cleaned_df = df.copy()
-    for col in cleaned_df.columns:
-        cleaned_df[col] = cleaned_df[col].apply(safe_str)
-    cleaned_df.columns = [safe_str(c) for c in cleaned_df.columns]
+        cleaned_df = df.copy()
+        for col in cleaned_df.columns:
+            cleaned_df[col] = cleaned_df[col].apply(safe_str)
+        cleaned_df.columns = [safe_str(c) for c in cleaned_df.columns]
 
-    table_data = [cleaned_df.columns.tolist()] + cleaned_df.values.tolist()
-    t = Table(table_data, colWidths=[240, 100, 100])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#2B6CB0")),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), font_bold_name),
-        ('FONTNAME', (0, 1), (-1, -1), font_name),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor("#F7FAFC")),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
-    ]))
-    story.append(t)
-    story.append(Spacer(1, 15))
+        table_data = [cleaned_df.columns.tolist()] + cleaned_df.values.tolist()
+        t = Table(table_data, colWidths=[240, 100, 100])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#2B6CB0")),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), font_bold_name),
+            ('FONTNAME', (0, 1), (-1, -1), font_name),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor("#F7FAFC")),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+        ]))
+        story.append(t)
+        story.append(Spacer(1, 15))
 
     doc.build(story)
     buffer.seek(0)
