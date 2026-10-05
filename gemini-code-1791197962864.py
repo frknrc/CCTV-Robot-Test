@@ -56,23 +56,40 @@ with st.form("cctv_formu"):
         checkpoints = st.number_input("Pasaport & Güvenlik Kontrol Noktası Sayısı", min_value=1, value=20)
     with col2:
         fence_m = st.number_input("Çevre Çit / Dış Sınır Uzunluğu (Metre)", min_value=500, value=8000, step=500)
-        parking_lanes = st.number_input("Otopark / Nizamiye Araç Giriş Şeridi Sayısı (ANPR)", min_value=0, value=8)
 
     st.markdown("---")
-    st.subheader("🖥️ Adım 3: Kontrol Odası ve İzleme Noktaları")
+    st.subheader("🚘 Adım 3: Plaka Tanıma Sistemi (ANPR) Tercihi")
+    use_anpr = st.checkbox("Otopark ve Nizamiye Girişlerinde Plaka Tanıma (ANPR) İstiyorum", value=True)
+    
+    anpr_cams = 0
+    parking_lanes = 0
+    anpr_speed = "Düşük Hız (Nizamiye / Otopark Bariyer)"
+    
+    if use_anpr:
+        st.info("ℹ️ Plaka Tanıma Sistemi için ek parametreleri giriniz:")
+        col_anpr1, col_anpr2 = st.columns(2)
+        with col_anpr1:
+            parking_lanes = st.number_input("Toplam Araç Giriş - Çıkış Şerit Sayısı", min_value=1, value=8, step=1)
+        with col_anpr2:
+            anpr_speed = st.selectbox("Araç Geçiş Hız Tipi", ["Düşük Hız (Nizamiye / Otopark Bariyer)", "Yüksek Hız (Ana Yol / VIP Giriş)"])
+        
+        # ANPR kamera sayısı hesaplama (Şerit başına çift yönlü/yedekli)
+        anpr_cams = parking_lanes * 2
+
+    st.markdown("---")
+    st.subheader("🖥️ Adım 4: Kontrol Odası ve İzleme Noktaları")
     col_obs1, col_obs2 = st.columns(2)
     with col_obs1:
-        control_rooms = st.number_input("Ana Kontrol Odası (MOC) / İzleme Merkezi Sayısı", min_value=1, value=1)
+        control_rooms = st.number_input("Ana Kontrol Odası (MOC) Sayısı", min_value=1, value=1)
         active_operators = st.number_input("Vardiyadaki Aktif Operatör / Masa Sayısı", min_value=1, value=6)
     with col_obs2:
         remote_view_points = st.number_input("Uzak İzleme Noktası Sayısı (Amir/Yönetici/Emniyet)", min_value=0, value=4)
 
     st.markdown("---")
-    st.subheader("⚙️ Adım 4: Kayıt ve Detay Beklentileri")
+    st.subheader("⚙️ Adım 5: Kayıt ve Detay Beklentileri")
     col3, col4 = st.columns(2)
     with col3:
         storage_days = st.selectbox("İstenen Geriye Dönük Kayıt Saklama Süresi (Gün)", [30, 60, 90, 180], index=1)
-        ups_hours = st.selectbox("Kesintisiz Güç Kaynağı (UPS) Destek Süresi", ["30 Dakika", "1 Saat", "2 Saat"], index=1)
     with col4:
         resolution = st.selectbox("Tercih Edilen Kamera Kalite Standardı", ["4MP (Önerilen / Optimal)", "2MP (Full HD - Standart)", "8MP (4K - Yüksek Detay)"])
 
@@ -90,7 +107,6 @@ if submit_button:
     terminal_cams = math.ceil(sqm / sqm_per_cam)
     checkpoint_cams = checkpoints * cam_per_check
     fence_cams = math.ceil(fence_m / fence_m_per_cam)
-    anpr_cams = parking_lanes * 2  # Giriş-Çıkış çift yönlü
 
     fence_thermal_ptz = math.ceil(fence_cams * 0.15)
     fence_fixed = fence_cams - fence_thermal_ptz
@@ -123,17 +139,23 @@ if submit_button:
     tab1, tab2, tab3 = st.tabs(["📷 Kamera Dağılımı", "💾 Kayıt & Depolama", "🖥️ İzleme Odaları & Kontrol"])
 
     with tab1:
-        st.table({
-            "Bölge / Ekipman": ["Terminal İçi Sabit Dome/Bullet", "Pasaport/Güvenlik Detay (FR)", "Çevre Çit Sabit Kamera", "Çevre Çit Termal / PTZ", "Plaka Tanıma Kamera (ANPR)"],
-            "Tahmini Adet": [terminal_cams, checkpoint_cams, fence_fixed, fence_thermal_ptz, anpr_cams],
-            "Açıklama": ["Genel alan izleme", "Yüz tanıma & detay takibi", "Sınır hat izleme", "Gece & uzun mesafe algılama", "Nizamiye & otopark giriş-çıkış"]
-        })
+        cam_table_data = {
+            "Bölge / Ekipman": ["Terminal İçi Sabit Dome/Bullet", "Pasaport/Güvenlik Detay (FR)", "Çevre Çit Sabit Kamera", "Çevre Çit Termal / PTZ"],
+            "Tahmini Adet": [terminal_cams, checkpoint_cams, fence_fixed, fence_thermal_ptz],
+            "Açıklama": ["Genel alan izleme", "Yüz tanıma & detay takibi", "Sınır hat izleme", "Gece & uzun mesafe algılama"]
+        }
+        
+        if use_anpr:
+            cam_table_data["Bölge / Ekipman"].append("Plaka Tanıma Kamerası (ANPR)")
+            cam_table_data["Tahmini Adet"].append(anpr_cams)
+            cam_table_data["Açıklama"].append(f"Nizamiye & otopark giriş-çıkış ({anpr_speed})")
+
+        st.table(cam_table_data)
 
     with tab2:
         st.write(f"• **Net Depolama İhtiyacı:** `{total_storage_tb:,} TB` ({storage_days} gün saklama esasına göre)")
         st.write(f"• **Ana Kayıt Sunucusu:** `{recording_servers} Adet` (64 Kanal Kapasiteli)")
         st.write(f"• **Yedek Sunucu (N+1 Failover):** `{failover_servers} Adet` (Kesintisiz çalışma için)")
-        st.write(f"• **UPS Akü Altyapısı:** `{ups_hours}` kesintisiz çalışma desteği")
 
     with tab3:
         st.write(f"• **Ana Kontrol Odası (MOC):** `{control_rooms} Adet` Merkez")
@@ -156,15 +178,26 @@ if submit_button:
             {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Terminal Kapalı Alanı", "Değer / Miktar": sqm, "Birim": "m²"},
             {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Çevre Çit Uzunluğu", "Değer / Miktar": fence_m, "Birim": "Metre"},
             {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Güvenlik Kontrol Noktası", "Değer / Miktar": checkpoints, "Birim": "Nokta"},
-            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Araç Giriş Şerit Sayısı", "Değer / Miktar": parking_lanes, "Birim": "Şerit"},
+            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Plaka Tanıma (ANPR) Durumu", "Değer / Miktar": "Var" if use_anpr else "Yok", "Birim": "-"},
+        ]
+
+        if use_anpr:
+            excel_data.append({"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "ANPR Araç Şerit Sayısı", "Değer / Miktar": parking_lanes, "Birim": "Şerit"})
+            excel_data.append({"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "ANPR Geçiş Hız Tipi", "Değer / Miktar": anpr_speed, "Birim": "-"})
+
+        excel_data.extend([
             {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Kayıt Saklama Süresi", "Değer / Miktar": storage_days, "Birim": "Gün"},
             {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "Çözünürlük Standardı", "Değer / Miktar": resolution, "Birim": "-"},
-            {"Kategori": "GİRDİ PARAMETRELERİ", "Bileşen / Tanım": "UPS Yedekleme Süresi", "Değer / Miktar": ups_hours, "Birim": "-"},
             {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Terminal İçi Sabit Kamera", "Değer / Miktar": terminal_cams, "Birim": "Adet"},
             {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Pasaport / Güvenlik (FR) Kamera", "Değer / Miktar": checkpoint_cams, "Birim": "Adet"},
             {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Çevre Çit Sabit Kamera", "Değer / Miktar": fence_fixed, "Birim": "Adet"},
             {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Çevre Çit Termal / PTZ Kamera", "Değer / Miktar": fence_thermal_ptz, "Birim": "Adet"},
-            {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Plaka Tanıma Kamerası (ANPR)", "Değer / Miktar": anpr_cams, "Birim": "Adet"},
+        ])
+
+        if use_anpr:
+            excel_data.append({"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "Plaka Tanıma Kamerası (ANPR)", "Değer / Miktar": anpr_cams, "Birim": "Adet"})
+
+        excel_data.extend([
             {"Kategori": "KAMERA DAĞILIMI", "Bileşen / Tanım": "TOPLAM KAMERA İHTİYACI", "Değer / Miktar": total_cams, "Birim": "Adet"},
             {"Kategori": "DEPOLAMA & SUNUCU", "Bileşen / Tanım": "Net Depolama Alanı", "Değer / Miktar": total_storage_tb, "Birim": "TB"},
             {"Kategori": "DEPOLAMA & SUNUCU", "Bileşen / Tanım": "64Ch Kayıt Sunucusu", "Değer / Miktar": recording_servers, "Birim": "Adet"},
@@ -174,7 +207,7 @@ if submit_button:
             {"Kategori": "KONTROL MERKEZİ", "Bileşen / Tanım": "Uzak İzleme Noktası", "Değer / Miktar": remote_view_points, "Birim": "Nokta"},
             {"Kategori": "KONTROL MERKEZİ", "Bileşen / Tanım": "55\" Video Wall Monitör", "Değer / Miktar": video_wall_monitors, "Birim": "Adet"},
             {"Kategori": "KONTROL MERKEZİ", "Bileşen / Tanım": "Operatör İş İstasyonu (PC)", "Değer / Miktar": total_workstations, "Birim": "Adet"},
-        ]
+        ])
 
         df = pd.DataFrame(excel_data)
         df.to_excel(writer, index=False, sheet_name='CCTV_Tasarim_Raporu', startrow=4)
