@@ -3,13 +3,14 @@ import math
 import pandas as pd
 import io
 import os
+import urllib.request
 from datetime import datetime
 import pytz
 from streamlit_javascript import st_javascript
 
 # PDF Oluşturma Kütüphaneleri
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
@@ -58,7 +59,7 @@ LOCATION_DATA = {
         "Saudi Arabia": ["Riyadh", "Jeddah", "Mecca", "Medina", "Dammam", "Other"],
         "United Arab Emirates": ["Dubai", "Abu Dhabi", "Sharjah", "Other"],
         "Qatar": ["Doha", "Al Rayyan", "Other"],
-        "Uzbekistan": ["Tashkent", "Samarkand", "Bukhara", "Other"],
+        "Uzbekistan": ["Tashkent", "Samarkand", "Buhara", "Other"],
         "Kyrgyzstan": ["Bishkek", "Osh", "Other"],
         "Germany": ["Berlin", "Munich", "Frankfurt", "Hamburg", "Other"],
         "Other": ["Other"]
@@ -532,38 +533,21 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         leading=14
     )
 
-    logo_tav_style = ParagraphStyle(
-        'LogoTAV',
-        fontName='Helvetica-Bold',
-        fontSize=20,
-        leading=22,
-        textColor=colors.white
-    )
-    logo_sub_style = ParagraphStyle(
-        'LogoSub',
-        fontName='Helvetica-Bold',
-        fontSize=7,
-        leading=9,
-        textColor=colors.HexColor("#E2E8F0")
-    )
+    # --- ORIJINAL TAV LOGOSUNU URL ÜZERİNDEN INDIRİP YÜKLEME ---
+    logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
+    try:
+        # PNG formatındaki resmi indirip doğrudan nesneye dönüştürüyoruz
+        logo_png_url = "https://raw.githubusercontent.com/tavtechnologies/assets/main/tav_logo.png"
+        img_data = urllib.request.urlopen(logo_png_url).read()
+        img_stream = io.BytesIO(img_data)
+        logo_img = RLImage(img_stream, width=150, height=45)
+        logo_img.hAlign = 'LEFT'
+        story.append(logo_img)
+    except Exception:
+        # İnternet bağlantısı kesilirse yedek temiz metin logosu
+        logo_fallback_style = ParagraphStyle('LogoFallback', fontName='Helvetica-Bold', fontSize=18, textColor=colors.HexColor("#1A365D"))
+        story.append(Paragraph("<b>TAV Technologies</b>", logo_fallback_style))
 
-    logo_table_data = [
-        [
-            Paragraph("<b>TAV</b>", logo_tav_style),
-            Paragraph("<b>TECHNOLOGIES</b><br/><font size=5 color='#CBD5E0'>AIRPORTS</font>", logo_sub_style)
-        ]
-    ]
-    logo_table = Table(logo_table_data, colWidths=[55, 90])
-    logo_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#1A365D")),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('LINEAFTER', (0, 0), (0, 0), 2, colors.HexColor("#E53E3E")),
-    ]))
-
-    story.append(logo_table)
     story.append(Spacer(1, 15))
 
     story.append(Paragraph(safe_str(t_labels["pdf_title"]), title_style))
