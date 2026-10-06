@@ -704,8 +704,8 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
-default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
+# --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ (DARK MODE UYUMLU BEYAZ LOGO) ---
+default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_beyaz_e470511c30.svg"
 
 col_logo, col_space = st.columns([1, 2])
 with col_logo:
