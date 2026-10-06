@@ -24,10 +24,11 @@ def apply_custom_language_styles(lang_code):
     
     custom_css = f"""
     <style>
+    /* Streamlit Üst Sağ Menü ve Altbilgiyi Gizleme */
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
-    header {{visibility: hidden;}}
     
+    /* Input alanlarındaki 'Press Enter to apply' metnini seçili dile dönüştürme */
     div[data-testid="InputInstructions"] {{
         font-size: 0px !important;
     }}
@@ -691,6 +692,18 @@ def create_output_df(items_data, redundancy_pct, t_labels):
             t_labels["col_unit"]: unit
         })
     return pd.DataFrame(rows)
+
+# --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
+default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
+
+col_logo, col_space = st.columns([1, 2])
+with col_logo:
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=280)
+    elif os.path.exists("logo.jpg"):
+        st.image("logo.jpg", width=280)
+    else:
+        st.image(default_logo_url, width=280)
 
 # --- BAŞLIK VE DİL SEÇİMİ ---
 c_lang, c_country, c_city = st.columns(3)
