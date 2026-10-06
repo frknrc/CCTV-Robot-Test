@@ -28,15 +28,10 @@ def apply_custom_language_styles(lang_code):
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     
-    /* Sayfa Üst Boşluk Dengesi */
+    /* Sayfa Üst Boşluk Rahatlatması */
     .block-container {{
         padding-top: 2rem !important;
-    }}
-    
-    /* Logo Hizalaması ve Alan Boyutu */
-    div[data-testid="stImage"] {{
-        margin-top: 0px !important;
-        margin-bottom: 20px !important;
+        padding-bottom: 3rem !important;
     }}
     
     /* Input alanlarındaki 'Press Enter to apply' metnini seçili dile dönüştürme */
@@ -704,19 +699,26 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ (DARK MODE UYUMLU BEYAZ LOGO) ---
-default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_beyaz_e470511c30.svg"
+# --- 1. EN ÜST BAĞIMSIZ LOGO ALANI ---
+default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
 
-col_logo, col_space = st.columns([1, 2])
-with col_logo:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=300)
-    elif os.path.exists("logo.jpg"):
-        st.image("logo.jpg", width=300)
-    else:
-        st.image(default_logo_url, width=300)
+# Logoyu en üst satıra net şekilde basıyoruz
+if os.path.exists("logo.png"):
+    st.image("logo.png", width=320)
+elif os.path.exists("logo.jpg"):
+    st.image("logo.jpg", width=320)
+else:
+    # URL'den çekilen SVG logosunun dark mode'da net görünmesi için parlaklık filtresi ile basıyoruz
+    st.markdown(
+        f"""
+        <div style="margin-bottom: 25px;">
+            <img src="{default_logo_url}" width="320" style="filter: brightness(0) invert(1) drop-shadow(0px 0px 1px rgba(255,255,255,0.5));">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-# --- BAŞLIK VE DİL SEÇİMİ ---
+# --- 2. DİL, ÜLKE VE ŞEHİR SEÇİM ALANI ---
 c_lang, c_country, c_city = st.columns(3)
 with c_lang:
     selected_lang = st.selectbox(
