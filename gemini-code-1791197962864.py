@@ -13,7 +13,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- ÜST MENÜ, GİTHUB SİMGELERİ VE DİNAMİK "PRESS ENTER TO APPLY" ÇEVİRİSİ (CSS) ---
+# --- ÜST MENÜ VE DİNAMİK "PRESS ENTER TO APPLY" ÇEVİRİSİ (CSS) ---
 def apply_custom_language_styles(lang_code):
     instructions = {
         "TR": "Uygulamak için Enter'a basınız",
@@ -24,19 +24,19 @@ def apply_custom_language_styles(lang_code):
     
     custom_css = f"""
     <style>
-    /* Streamlit Üst Sağ Menü ve Altbilgiyi Gizleme */
+    /* Streamlit Sağ Üst Menü ve Altbilgiyi Gizleme */
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     
-    /* Sayfa Üst Padding Ayarı (Logoyu En Üste Taşımak İçin) */
+    /* Sayfa Üst Boşluk Dengesi */
     .block-container {{
-        padding-top: 1.5rem !important;
+        padding-top: 2rem !important;
     }}
     
-    /* Logoyu yukarı çekme ve altındaki gereksiz boşluğu sıfırlama */
+    /* Logo Hizalaması ve Alan Boyutu */
     div[data-testid="stImage"] {{
-        margin-top: -30px !important;
-        margin-bottom: 10px !important;
+        margin-top: 0px !important;
+        margin-bottom: 20px !important;
     }}
     
     /* Input alanlarındaki 'Press Enter to apply' metnini seçili dile dönüştürme */
@@ -707,14 +707,14 @@ def create_output_df(items_data, redundancy_pct, t_labels):
 # --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
 default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
 
-col_logo, col_space = st.columns([1.5, 1.5])
+col_logo, col_space = st.columns([1, 2])
 with col_logo:
     if os.path.exists("logo.png"):
-        st.image("logo.png", width=380)
+        st.image("logo.png", width=300)
     elif os.path.exists("logo.jpg"):
-        st.image("logo.jpg", width=380)
+        st.image("logo.jpg", width=300)
     else:
-        st.image(default_logo_url, width=380)
+        st.image(default_logo_url, width=300)
 
 # --- BAŞLIK VE DİL SEÇİMİ ---
 c_lang, c_country, c_city = st.columns(3)
