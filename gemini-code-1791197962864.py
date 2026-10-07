@@ -697,7 +697,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (SABİT SAĞ KANAT YAPISI) ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (GENİŞLETİLMİŞ MODEL DESTEĞİ) ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Asistanı")
     st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
@@ -747,17 +747,28 @@ def render_ulv_ai_bot(t_labels):
 
             with st.chat_message("assistant"):
                 with st.spinner("ULV Asistanı yanıtlıyor..."):
-                    try:
-                        model = genai.GenerativeModel(
-                            model_name='gemini-1.5-flash',
-                            system_instruction=system_instruction
-                        )
-                        response = model.generate_content(user_prompt)
-                        ai_reply = response.text
+                    ai_reply = None
+                    # Farklı API sürümleri/modelleri için yedekli deneme listesi
+                    candidate_models = ["gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-pro"]
+                    
+                    for model_name in candidate_models:
+                        try:
+                            model = genai.GenerativeModel(
+                                model_name=model_name,
+                                system_instruction=system_instruction
+                            )
+                            response = model.generate_content(user_prompt)
+                            if response and response.text:
+                                ai_reply = response.text
+                                break
+                        except Exception:
+                            continue
+
+                    if ai_reply:
                         st.markdown(ai_reply)
                         st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
-                    except Exception as e:
-                        st.error(f"Hata oluştu: {str(e)}")
+                    else:
+                        st.error("Üzgünüz, yapay zeka servisine şu anda erişilemiyor. Lütfen API key'inizin aktif olduğunu kontrol edin.")
 
 # --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
 default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
