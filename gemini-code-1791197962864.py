@@ -5,8 +5,7 @@ import io
 import os
 from datetime import datetime
 import pytz
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -698,7 +697,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (STABLE GOOGLE SDK) ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Teknik Asistanı")
     st.caption("Zayıf akım sistemleri, TAV Technologies standartları, mühendislik katsayıları ve tasarım kriterleri hakkında teknik sorularınızı sorun.")
@@ -709,9 +708,9 @@ def render_ulv_ai_bot(t_labels):
         return
 
     try:
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key=api_key)
     except Exception as e:
-        st.error(f"Gemini API Bağlantısı Başarısız: {str(e)}")
+        st.error(f"Gemini API Yapılandırma Hatası: {str(e)}")
         return
 
     system_instruction = """
@@ -744,14 +743,11 @@ def render_ulv_ai_bot(t_labels):
         with st.chat_message("assistant"):
             with st.spinner("ULV Systems Teknik Uzmanı yanıtlıyor..."):
                 try:
-                    response = client.models.generate_content(
-                        model='gemini-2.5-flash',
-                        contents=user_prompt,
-                        config=types.GenerateContentConfig(
-                            system_instruction=system_instruction,
-                            temperature=0.3
-                        )
+                    model = genai.GenerativeModel(
+                        model_name='gemini-1.5-flash',
+                        system_instruction=system_instruction
                     )
+                    response = model.generate_content(user_prompt)
                     ai_reply = response.text
                     st.markdown(ai_reply)
                     st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
@@ -825,7 +821,6 @@ st.markdown("---")
 if not selected_systems:
     st.warning(t["warning_no_system"])
 else:
-    # Sekmelere AI Asistanını da ekliyoruz
     all_tab_titles = list(selected_systems) + [t["ai_tab_name"]]
     system_tabs = st.tabs(all_tab_titles)
     inputs = {}
@@ -917,7 +912,6 @@ else:
                     t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="p_red"
                 )
 
-    # Son Sekmeye ULV Systems AI Asistanını Çiziyoruz
     with system_tabs[-1]:
         render_ulv_ai_bot(t)
 
