@@ -5,6 +5,7 @@ import io
 import os
 from datetime import datetime
 import pytz
+from reportlab.pdfgen import canvas
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -507,48 +508,44 @@ TEXTS = {
     }
 }
 
-# --- PDF İÇİN DINAMIK SAYSILANDIRMA VE HEADER/FOOTER ---
-class NumberedCanvas:
+# --- PDF DYNAMIC PAGE NUMBERING & HEADER/FOOTER CLASS ---
+class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
-        from reportlab.pdfgen import canvas
+        super().__init__(*args, **kwargs)
         self._saved_page_states = []
 
-    def __call__(self, canvas_obj, doc):
-        old_show_page = canvas_obj.showPage
-        def custom_show_page():
-            self._saved_page_states.append(dict(canvas_obj.__dict__))
-            canvas_obj._startPage()
-        canvas_obj.showPage = custom_show_page
+    def showPage(self):
+        self._saved_page_states.append(dict(self.__dict__))
+        self._startPage()
 
-        def custom_save():
-            num_pages = len(self._saved_page_states)
-            for state in self._saved_page_states:
-                canvas_obj.__dict__.update(state)
-                self.draw_page_number(canvas_obj, num_pages)
-                old_show_page()
-            canvas_obj._save()
-        canvas_obj.save = custom_save
+    def save(self):
+        num_pages = len(self._saved_page_states)
+        for state in self._saved_page_states:
+            self.__dict__.update(state)
+            self.draw_page_number(num_pages)
+            super().showPage()
+        super().save()
 
-    def draw_page_number(self, page, page_count):
+    def draw_page_number(self, page_count):
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4
-        page.saveState()
-        page.setFont("Helvetica", 8)
-        page.setFillColor(colors.HexColor("#718096"))
+        self.saveState()
+        self.setFont("Helvetica", 8)
+        self.setFillColor(colors.HexColor("#718096"))
         
-        # Sadece 2. sayfadan itibaren header/footer çiz (İlk sayfa kapak)
-        if page._pageNumber > 1:
+        # Sadece 2. sayfadan itibaren header/footer ekle (İlk sayfa kapak)
+        if self._pageNumber > 1:
             # Header
-            page.setStrokeColor(colors.HexColor("#E2E8F0"))
-            page.setLineWidth(0.5)
-            page.line(25, A4[1] - 20, A4[0] - 25, A4[1] - 20)
-            page.drawString(25, A4[1] - 16, "TAV Technologies - Zayıf Akım Sistem Planlama Raporu")
+            self.setStrokeColor(colors.HexColor("#E2E8F0"))
+            self.setLineWidth(0.5)
+            self.line(25, A4[1] - 20, A4[0] - 25, A4[1] - 20)
+            self.drawString(25, A4[1] - 16, "TAV Technologies - Zayıf Akım Sistem Planlama Raporu")
             
             # Footer
-            page.line(25, 30, A4[0] - 25, 30)
-            page.drawString(25, 18, "Gizli & Özel - TAV Technologies © Tüm Hakları Saklıdır.")
-            page.drawRightString(A4[0] - 25, 18, f"Sayfa {page._pageNumber} / {page_count}")
-        page.restoreState()
+            self.line(25, 30, A4[0] - 25, 30)
+            self.drawString(25, 18, "Gizli & Özel - TAV Technologies © Tüm Hakları Saklıdır.")
+            self.drawRightString(A4[0] - 25, 18, f"Sayfa {self._pageNumber} / {page_count}")
+        self.restoreState()
 
 # --- YENİLENMİŞ KURUMSAL PDF OLUŞTURMA ---
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
@@ -738,7 +735,7 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         story.append(t_out)
         story.append(Spacer(1, 16))
 
-    doc.build(story, canvasmaker=NumberedCanvas())
+    doc.build(story, canvasmaker=NumberedCanvas)
     buffer.seek(0)
     return buffer.getvalue()
 
