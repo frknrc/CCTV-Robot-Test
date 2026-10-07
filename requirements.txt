@@ -6,3 +6,4 @@ streamlit-javascript
 pytz
 XlsxWriter
 openpyxl
+google-genai
