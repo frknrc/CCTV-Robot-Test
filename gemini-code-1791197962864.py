@@ -606,6 +606,8 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
     story.append(Paragraph(safe_str(f"<b>{t_labels['report_date_label']}:</b> {report_datetime_str}"), normal_style))
     story.append(Spacer(1, 12))
 
+    page_width = A4[0] - 50  # Toplam kullanılabilir sayfa genişliği (25'er margin düşüldü)
+
     for sys_key, df_out in results.items():
         story.append(Paragraph(safe_str(f"<b>{sys_key}</b>"), subtitle_style))
 
@@ -640,10 +642,19 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
 
         t_out_data = [df_out_clean.columns.tolist()] + df_out_clean.values.tolist()
         
-        # Sütun sayısına göre genişlik ayarlama
-        col_widths = [200, 100, 100, 90] if len(df_out_clean.columns) == 4 else [180, 75, 75, 80, 80]
-        
-        t_out = Table(t_out_data, colWidths=col_widths)
+        # Sütun sayısına göre dinamik ve tam uyumlu genişlik hesabı
+        col_count = len(df_out_clean.columns)
+        if col_count == 3:
+            dynamic_col_widths = [280, 120, 90]
+        elif col_count == 5:
+            dynamic_col_widths = [180, 75, 75, 80, 80]
+        else:
+            # Genel dinamik dağıtım
+            first_col_w = 220
+            rem_w = (page_width - first_col_w) / (col_count - 1)
+            dynamic_col_widths = [first_col_w] + [rem_w] * (col_count - 1)
+
+        t_out = Table(t_out_data, colWidths=dynamic_col_widths)
         t_out.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#2B6CB0")),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -920,7 +931,7 @@ else:
                         {t["col_input_param"]: t["cctv_res"], t["col_input_val"]: resolution, t["col_unit"]: t["units"]["none"]}
                     ])
 
-                    if red_pct > 0:
+                    if red_pct and red_pct > 0:
                         cctv_inputs_list.append({t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"})
 
                     inputs_summary[t["system_names"]["CCTV"]] = pd.DataFrame(cctv_inputs_list)
@@ -964,7 +975,7 @@ else:
                         {t["col_input_param"]: t["acs_face"], t["col_input_val"]: face_qty, t["col_unit"]: t["units"]["pcs"]},
                         {t["col_input_param"]: t["acs_finger"], t["col_input_val"]: finger_qty, t["col_unit"]: t["units"]["pcs"]}
                     ]
-                    if red_pct > 0:
+                    if red_pct and red_pct > 0:
                         acs_inputs_list.append({t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"})
 
                     inputs_summary[t["system_names"]["ACS"]] = pd.DataFrame(acs_inputs_list)
@@ -1000,7 +1011,7 @@ else:
                         {t["col_input_param"]: t["fas_rf"], t["col_input_val"]: t["units"]["yes"] if inputs.get('fas_raised_floor') else t["units"]["no"], t["col_unit"]: t["units"]["none"]},
                         {t["col_input_param"]: t["fas_beam"], t["col_input_val"]: beam_qty, t["col_unit"]: t["units"]["pair"]}
                     ]
-                    if red_pct > 0:
+                    if red_pct and red_pct > 0:
                         fas_inputs_list.append({t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"})
 
                     inputs_summary[t["system_names"]["FAS"]] = pd.DataFrame(fas_inputs_list)
@@ -1032,7 +1043,7 @@ else:
                         {t["col_input_param"]: t["pava_zones"], t["col_input_val"]: zones, t["col_unit"]: t["units"]["zone"]},
                         {t["col_input_param"]: t["pava_env"], t["col_input_val"]: env, t["col_unit"]: t["units"]["none"]}
                     ]
-                    if red_pct > 0:
+                    if red_pct and red_pct > 0:
                         pava_inputs_list.append({t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"})
 
                     inputs_summary[t["system_names"]["PA/VA"]] = pd.DataFrame(pava_inputs_list)
