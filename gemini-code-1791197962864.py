@@ -767,22 +767,6 @@ def render_ulv_ai_bot(t_labels):
                             st.error("Model boş yanıt döndürdü.")
                     except Exception as e:
                         st.error(f"Hata oluştu: {str(e)}")
-# --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
-default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
-
-if os.path.exists("logo.png"):
-    st.image("logo.png", width=320)
-elif os.path.exists("logo.jpg"):
-    st.image("logo.jpg", width=320)
-else:
-    st.markdown(
-        f"""
-        <div style="margin-bottom: 25px;">
-            <img src="{default_logo_url}" width="320" style="filter: brightness(0) invert(1) drop-shadow(0px 0px 1px rgba(255,255,255,0.5));">
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
 # --- BAŞLIK VE DİL SEÇİMİ ---
 c_lang, c_country, c_city = st.columns(3)
