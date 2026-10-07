@@ -697,7 +697,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (GÜNCEL MODEL SEÇİMİ) ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (HATA DÜZELTİLMİŞ) ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Asistanı")
     st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
@@ -706,6 +706,8 @@ def render_ulv_ai_bot(t_labels):
     if not api_key:
         st.info("💡 AI Asistanı aktif etmek için `GEMINI_API_KEY` eklenmelidir.")
         return
+
+    from google import genai
 
     system_instruction = """
     Sen ULV Systems (TAV Technologies) bünyesinde çalışan kıdemli bir Zayıf Akım Sistemleri Uzmanısın (ELV Specialist).
@@ -744,10 +746,10 @@ def render_ulv_ai_bot(t_labels):
                     try:
                         client = genai.Client(api_key=api_key)
                         ai_reply = None
-                        last_error = None
+                        last_err = None
                         
-                        # API tarafından doğrudan önerilen güncel modeller
-                        candidate_models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]
+                        # Yalnızca en güncel ve desteklenen model adları
+                        candidate_models = ["gemini-2.5-flash", "gemini-1.5-flash"]
                         
                         for m_name in candidate_models:
                             try:
@@ -762,16 +764,16 @@ def render_ulv_ai_bot(t_labels):
                                     ai_reply = response.text
                                     break
                             except Exception as err:
-                                last_error = err
+                                last_err = err
                                 continue
 
                         if ai_reply:
                             st.markdown(ai_reply)
                             st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
                         else:
-                            st.error(f"Hata oluştu: {str(last_error)}")
+                            st.error(f"Model yanıt veremedi: {str(last_err)}")
                     except Exception as e:
-                        st.error(f"Baglanti hatasi: {str(e)}")
+                        st.error(f"Bağlantı Hatası: {str(e)}")
 
 # --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
 default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
