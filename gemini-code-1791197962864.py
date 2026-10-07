@@ -776,7 +776,7 @@ def render_ulv_ai_bot(t_labels):
                     except Exception as e:
                         st.error(f"Hata oluştu: {str(e)}")
 
-# --- ŞİRKET LOGOSU (TAV TECHNOLOGIES YENİDEN TASARLANMIŞ ŞIK KURUMSAL DÜZEN) ---
+# --- ŞİRKET LOGOSU (ORİJİNAL TAV TECHNOLOGIES AMBLEMİ) ---
 logo_path = None
 for p in ["logo.png", "logo.jpg", "logo.jpeg"]:
     if os.path.exists(p):
@@ -784,24 +784,22 @@ for p in ["logo.png", "logo.jpg", "logo.jpeg"]:
         break
 
 if logo_path:
-    st.image(logo_path, width=300)
+    st.image(logo_path, width=280)
 else:
-    # TAV Technologies Orijinal Renk ve Amblem Tasarımlı SVG / HTML Logo
+    # Orijinal TAV Technologies Küre & Halka Logosunun Vektörel Hali
     st.markdown(
         """
-        <div style="margin-bottom: 25px; font-family: 'Montserrat', sans-serif;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="50" r="45" stroke="#3182CE" stroke-width="8" fill="none"/>
-                    <path d="M25 50 C25 30, 75 30, 75 50 C75 70, 25 70, 25 50" stroke="#00B4D8" stroke-width="6" fill="none"/>
-                    <circle cx="50" cy="50" r="12" fill="#E2E8F0"/>
+        <div style="margin-bottom: 25px; font-family: Arial, sans-serif;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <svg width="50" height="50" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="38" fill="#1D3557" stroke="#2B6CB0" stroke-width="3"/>
+                    <path d="M 18 50 A 35 15 0 1 0 82 50 A 35 15 0 1 0 18 50" stroke="#48BB78" stroke-width="4" fill="none" transform="rotate(-25 50 50)"/>
+                    <circle cx="50" cy="50" r="28" stroke="#E2E8F0" stroke-width="2" fill="none" stroke-dasharray="4 3"/>
+                    <path d="M 30 50 Q 50 30 70 50 Q 50 70 30 50" fill="#2B6CB0" opacity="0.6"/>
                 </svg>
                 <div>
-                    <div style="font-size: 28px; font-weight: 900; color: #FFFFFF; letter-spacing: 2px; line-height: 1;">
-                        TAV <span style="color: #63B3ED; font-weight: 300;">TECHNOLOGIES</span>
-                    </div>
-                    <div style="font-size: 10px; color: #A0AEC0; letter-spacing: 3px; font-weight: 600; margin-top: 3px;">
-                        A TAV AIRPORTS & ADP GROUP COMPANY
+                    <div style="font-size: 26px; font-weight: 800; color: #FFFFFF; letter-spacing: 1.5px; line-height: 1.1;">
+                        TAV <span style="color: #A0AEC0; font-weight: 300;">TECHNOLOGIES</span>
                     </div>
                 </div>
             </div>
@@ -809,7 +807,6 @@ else:
         """,
         unsafe_allow_html=True
     )
-
 # --- BAŞLIK VE DİL SEÇİMİ ---
 c_lang, c_country, c_city = st.columns(3)
 with c_lang:
