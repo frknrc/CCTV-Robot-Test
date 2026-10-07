@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 import pytz
 from google import genai
+from google.genai import types
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -697,7 +698,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (GEMINI 3.8-FLASH MODELİ) ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (STABLE MODEL & FALLBACK) ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Asistanı")
     st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
@@ -718,8 +719,7 @@ def render_ulv_ai_bot(t_labels):
     Yaklaşımın ve Kuralların:
     1. Çok profesyonel, teknik olarak kesin ve yardımcı bir dilde yanıt ver.
     2. Havalimanı ve büyük ölçekli bina standartlarına (ICAO, IATA, EN54, NFPA) uygun mühendislik yanıtları ver.
-    3. Kullanıcıların botun hesaplama katsayıları ve mantığı hakkındaki sorularını ULV Systems standartlarına göre netleştir.
-    4. Doğrudan net, teknik ve maddeli açıklamalar sun.
+    3. Doğrudan net, teknik ve maddeli açıklamalar sun.
     """
 
     if "ai_chat_history" not in st.session_state:
@@ -742,27 +742,41 @@ def render_ulv_ai_bot(t_labels):
             with st.chat_message("assistant"):
                 with st.spinner("ULV Asistanı yanıtlıyor..."):
                     try:
-                        client = genai.Client(api_key=api_key)
-                        
-                        # Google API'sinin istediği güncel model
-                        response = client.models.generate_content(
-                            model="gemini-3.8-flash",
-                            contents=user_prompt,
-                            config={
-                                "system_instruction": system_instruction
-                            }
+                        client = genai.Client(
+                            api_key=api_key,
+                            http_options=types.HttpOptions(timeout=15000)
                         )
                         
-                        if response and response.text:
-                            ai_reply = response.text
+                        ai_reply = None
+                        last_err = None
+                        
+                        # API'de en yüksek erişilebilirliğe sahip kararlı modeller
+                        for m_name in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+                            try:
+                                response = client.models.generate_content(
+                                    model=m_name,
+                                    contents=user_prompt,
+                                    config=types.GenerateContentConfig(
+                                        system_instruction=system_instruction,
+                                        temperature=0.3
+                                    )
+                                )
+                                if response and response.text:
+                                    ai_reply = response.text
+                                    break
+                            except Exception as err:
+                                last_err = err
+                                continue
+
+                        if ai_reply:
                             st.markdown(ai_reply)
                             st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
                         else:
-                            st.error("Model boş yanıt döndürdü.")
+                            st.error(f"Yanıt alınamadı. Hata: {str(last_err)}")
                     except Exception as e:
                         st.error(f"Hata oluştu: {str(e)}")
 
-# --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ (GARANTİLİ YÜKLEME) ---
+# --- ŞİRKET LOGOSU (TAV TECHNOLOGIES YENİDEN TASARLANMIŞ ŞIK KURUMSAL DÜZEN) ---
 logo_path = None
 for p in ["logo.png", "logo.jpg", "logo.jpeg"]:
     if os.path.exists(p):
@@ -770,15 +784,27 @@ for p in ["logo.png", "logo.jpg", "logo.jpeg"]:
         break
 
 if logo_path:
-    st.image(logo_path, width=320)
+    st.image(logo_path, width=300)
 else:
-    # Güvenli SVG / HTML Logo Gösterimi
+    # TAV Technologies Orijinal Renk ve Amblem Tasarımlı SVG / HTML Logo
     st.markdown(
         """
-        <div style="margin-bottom: 25px; font-family: sans-serif;">
-            <h1 style="color: #1A365D; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -1px;">
-                TAV <span style="color: #2B6CB0; font-weight: 400;">TECHNOLOGIES</span>
-            </h1>
+        <div style="margin-bottom: 25px; font-family: 'Montserrat', sans-serif;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="45" stroke="#3182CE" stroke-width="8" fill="none"/>
+                    <path d="M25 50 C25 30, 75 30, 75 50 C75 70, 25 70, 25 50" stroke="#00B4D8" stroke-width="6" fill="none"/>
+                    <circle cx="50" cy="50" r="12" fill="#E2E8F0"/>
+                </svg>
+                <div>
+                    <div style="font-size: 28px; font-weight: 900; color: #FFFFFF; letter-spacing: 2px; line-height: 1;">
+                        TAV <span style="color: #63B3ED; font-weight: 300;">TECHNOLOGIES</span>
+                    </div>
+                    <div style="font-size: 10px; color: #A0AEC0; letter-spacing: 3px; font-weight: 600; margin-top: 3px;">
+                        A TAV AIRPORTS & ADP GROUP COMPANY
+                    </div>
+                </div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True
