@@ -639,7 +639,11 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         df_out_clean.columns = [safe_str(c) for c in df_out_clean.columns]
 
         t_out_data = [df_out_clean.columns.tolist()] + df_out_clean.values.tolist()
-        t_out = Table(t_out_data, colWidths=[180, 75, 75, 80, 80])
+        
+        # Sütun sayısına göre genişlik ayarlama
+        col_widths = [200, 100, 100, 90] if len(df_out_clean.columns) == 4 else [180, 75, 75, 80, 80]
+        
+        t_out = Table(t_out_data, colWidths=col_widths)
         t_out.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#2B6CB0")),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -679,18 +683,29 @@ def generate_excel(results, inputs_summary, t_labels):
 
 def create_output_df(items_data, redundancy_pct, t_labels):
     rows = []
-    factor = float(redundancy_pct) / 100.0
+    factor = float(redundancy_pct) / 100.0 if redundancy_pct else 0.0
+    has_redundancy = factor > 0
+
     for name, base_val, unit in items_data:
         base_val = base_val if base_val is not None else 0
-        red_val = math.ceil(base_val * factor) if base_val > 0 else 0
+        if base_val <= 0:
+            continue  # Girdisi / Değeri olmayan kalemleri raporda tamamen gizle
+            
+        red_val = math.ceil(base_val * factor) if has_redundancy else 0
         tot_val = base_val + red_val
-        rows.append({
-            t_labels["col_metric"]: name,
-            t_labels["col_base"]: base_val,
-            t_labels["col_redundancy"]: red_val,
-            t_labels["col_total"]: tot_val,
-            t_labels["col_unit"]: unit
-        })
+        
+        row_dict = {t_labels["col_metric"]: name}
+        
+        if has_redundancy:
+            row_dict[t_labels["col_base"]] = base_val
+            row_dict[t_labels["col_redundancy"]] = red_val
+            row_dict[t_labels["col_total"]] = tot_val
+        else:
+            row_dict[t_labels["col_total"]] = base_val
+            
+        row_dict[t_labels["col_unit"]] = unit
+        rows.append(row_dict)
+        
     return pd.DataFrame(rows)
 
 # --- ŞİRKET LOGOSU (ORİJİNAL TAV TECHNOLOGIES LOGOSU) ---
@@ -895,7 +910,6 @@ else:
                         {t["col_input_param"]: t["cctv_fence"], t["col_input_val"]: fence_m, t["col_unit"]: t["units"]["meter"]}
                     ]
 
-                    # Girdi özetinde de ANPR seçilmediyse gösterme
                     if inputs.get('cctv_use_anpr', False):
                         cctv_inputs_list.append({t["col_input_param"]: t["cctv_lanes"], t["col_input_val"]: lanes, t["col_unit"]: t["units"]["lane"]})
 
@@ -903,9 +917,11 @@ else:
                         {t["col_input_param"]: t["cctv_cr"], t["col_input_val"]: inputs.get('cctv_control_rooms') or 0, t["col_unit"]: t["units"]["pcs"]},
                         {t["col_input_param"]: t["cctv_op"], t["col_input_val"]: inputs.get('cctv_operators') or 0, t["col_unit"]: t["units"]["desk"]},
                         {t["col_input_param"]: t["cctv_days"], t["col_input_val"]: days, t["col_unit"]: t["units"]["day"]},
-                        {t["col_input_param"]: t["cctv_res"], t["col_input_val"]: resolution, t["col_unit"]: t["units"]["none"]},
-                        {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
+                        {t["col_input_param"]: t["cctv_res"], t["col_input_val"]: resolution, t["col_unit"]: t["units"]["none"]}
                     ])
+
+                    if red_pct > 0:
+                        cctv_inputs_list.append({t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"})
 
                     inputs_summary[t["system_names"]["CCTV"]] = pd.DataFrame(cctv_inputs_list)
 
@@ -915,7 +931,6 @@ else:
                         (t["cctv_out"]["checkpoint"], checkpoint_cams, t["units"]["pcs"])
                     ]
 
-                    # ANPR kutucuğu işaretlenmemişse raporda/çıktıda ANPR kamerasını hiç gösterme
                     if inputs.get('cctv_use_anpr', False):
                         items_data.append((t["cctv_out"]["anpr"], anpr_cams, t["units"]["pcs"]))
 
@@ -941,15 +956,18 @@ else:
                     readers = (single_doors * 2) + (double_doors * 2) + (turnstiles * 2)
                     controllers = math.ceil((total_doors + turnstiles) / 4) if (total_doors + turnstiles) > 0 else 0
 
-                    inputs_summary[t["system_names"]["ACS"]] = pd.DataFrame([
+                    acs_inputs_list = [
                         {t["col_input_param"]: t["acs_s_doors"], t["col_input_val"]: single_doors, t["col_unit"]: t["units"]["pcs"]},
                         {t["col_input_param"]: t["acs_d_doors"], t["col_input_val"]: double_doors, t["col_unit"]: t["units"]["pcs"]},
                         {t["col_input_param"]: t["acs_turnstiles"], t["col_input_val"]: turnstiles, t["col_unit"]: t["units"]["pcs"]},
                         {t["col_input_param"]: t["acs_users"], t["col_input_val"]: users, t["col_unit"]: t["units"]["user"]},
                         {t["col_input_param"]: t["acs_face"], t["col_input_val"]: face_qty, t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["acs_finger"], t["col_input_val"]: finger_qty, t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
-                    ])
+                        {t["col_input_param"]: t["acs_finger"], t["col_input_val"]: finger_qty, t["col_unit"]: t["units"]["pcs"]}
+                    ]
+                    if red_pct > 0:
+                        acs_inputs_list.append({t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"})
+
+                    inputs_summary[t["system_names"]["ACS"]] = pd.DataFrame(acs_inputs_list)
 
                     items_data = [
                         (t["acs_out"]["doors"], total_doors, t["units"]["pcs"]),
@@ -977,12 +995,15 @@ else:
                     loops = math.ceil(base_detectors / 200) if base_detectors > 0 else 0
                     panels = math.ceil(loops / 8) if loops > 0 else 0
 
-                    inputs_summary[t["system_names"]["FAS"]] = pd.DataFrame([
+                    fas_inputs_list = [
                         {t["col_input_param"]: t["fas_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
                         {t["col_input_param"]: t["fas_rf"], t["col_input_val"]: t["units"]["yes"] if inputs.get('fas_raised_floor') else t["units"]["no"], t["col_unit"]: t["units"]["none"]},
-                        {t["col_input_param"]: t["fas_beam"], t["col_input_val"]: beam_qty, t["col_unit"]: t["units"]["pair"]},
-                        {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
-                    ])
+                        {t["col_input_param"]: t["fas_beam"], t["col_input_val"]: beam_qty, t["col_unit"]: t["units"]["pair"]}
+                    ]
+                    if red_pct > 0:
+                        fas_inputs_list.append({t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"})
+
+                    inputs_summary[t["system_names"]["FAS"]] = pd.DataFrame(fas_inputs_list)
 
                     items_data = [
                         (t["fas_out"]["detectors"], base_detectors, t["units"]["pcs"]),
@@ -1006,12 +1027,15 @@ else:
                     total_power_watts = math.ceil(speakers * watts_per_spk * 1.25) if speakers > 0 else 0
                     amplifiers = math.ceil(total_power_watts / 1000) if total_power_watts > 0 else 0
 
-                    inputs_summary[t["system_names"]["PA/VA"]] = pd.DataFrame([
+                    pava_inputs_list = [
                         {t["col_input_param"]: t["pava_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
                         {t["col_input_param"]: t["pava_zones"], t["col_input_val"]: zones, t["col_unit"]: t["units"]["zone"]},
-                        {t["col_input_param"]: t["pava_env"], t["col_input_val"]: env, t["col_unit"]: t["units"]["none"]},
-                        {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
-                    ])
+                        {t["col_input_param"]: t["pava_env"], t["col_input_val"]: env, t["col_unit"]: t["units"]["none"]}
+                    ]
+                    if red_pct > 0:
+                        pava_inputs_list.append({t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"})
+
+                    inputs_summary[t["system_names"]["PA/VA"]] = pd.DataFrame(pava_inputs_list)
 
                     items_data = [
                         (t["pava_out"]["speakers"], speakers, t["units"]["pcs"]),
