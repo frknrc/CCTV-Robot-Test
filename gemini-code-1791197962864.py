@@ -741,23 +741,32 @@ def render_ulv_ai_bot(t_labels):
 
             with st.chat_message("assistant"):
                 with st.spinner("ULV Asistanı yanıtlıyor..."):
-                    try:
-                        client = genai.Client(api_key=api_key)
-                        response = client.models.generate_content(
-                            model='gemini-1.5-flash',  # Model ismi güncellendi
-                            contents=user_prompt,
-                            config={
-                                'system_instruction': system_instruction
-                            }
-                        )
-                        if response and response.text:
-                            ai_reply = response.text
-                            st.markdown(ai_reply)
-                            st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
-                        else:
-                            st.error("Yanıt alınamadı.")
-                    except Exception as e:
-                        st.error(f"Hata oluştu: {str(e)}")
+                    client = genai.Client(api_key=api_key)
+                    ai_reply = None
+                    
+                    # Güncel modeller sırasıyla denenir
+                    candidate_models = ['gemini-2.5-flash', 'gemini-2.0-flash']
+                    
+                    for model_name in candidate_models:
+                        try:
+                            response = client.models.generate_content(
+                                model=model_name,
+                                contents=user_prompt,
+                                config={
+                                    'system_instruction': system_instruction
+                                }
+                            )
+                            if response and response.text:
+                                ai_reply = response.text
+                                break
+                        except Exception:
+                            continue
+
+                    if ai_reply:
+                        st.markdown(ai_reply)
+                        st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
+                    else:
+                        st.error("Yanıt alınamadı. Lütfen API anahtarınızı ve erişim izinlerinizi kontrol edin.")
                         
 # --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
 default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
