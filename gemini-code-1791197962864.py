@@ -888,12 +888,18 @@ else:
 
                     poe_switches_24p = math.ceil(total_cams / 20) if total_cams > 0 else 0
 
-                    inputs_summary[t["system_names"]["CCTV"]] = pd.DataFrame([
+                    cctv_inputs_list = [
                         {t["col_input_param"]: t["cctv_scope"], t["col_input_val"]: airport_type, t["col_unit"]: t["units"]["none"]},
                         {t["col_input_param"]: t["cctv_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
                         {t["col_input_param"]: t["cctv_checkpoints"], t["col_input_val"]: checkpoints, t["col_unit"]: t["units"]["point"]},
-                        {t["col_input_param"]: t["cctv_fence"], t["col_input_val"]: fence_m, t["col_unit"]: t["units"]["meter"]},
-                        {t["col_input_param"]: t["cctv_lanes"], t["col_input_val"]: lanes, t["col_unit"]: t["units"]["lane"]},
+                        {t["col_input_param"]: t["cctv_fence"], t["col_input_val"]: fence_m, t["col_unit"]: t["units"]["meter"]}
+                    ]
+
+                    # Girdi özetinde de ANPR seçilmediyse gösterme
+                    if inputs.get('cctv_use_anpr', False):
+                        cctv_inputs_list.append({t["col_input_param"]: t["cctv_lanes"], t["col_input_val"]: lanes, t["col_unit"]: t["units"]["lane"]})
+
+                    cctv_inputs_list.extend([
                         {t["col_input_param"]: t["cctv_cr"], t["col_input_val"]: inputs.get('cctv_control_rooms') or 0, t["col_unit"]: t["units"]["pcs"]},
                         {t["col_input_param"]: t["cctv_op"], t["col_input_val"]: inputs.get('cctv_operators') or 0, t["col_unit"]: t["units"]["desk"]},
                         {t["col_input_param"]: t["cctv_days"], t["col_input_val"]: days, t["col_unit"]: t["units"]["day"]},
@@ -901,16 +907,24 @@ else:
                         {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
                     ])
 
+                    inputs_summary[t["system_names"]["CCTV"]] = pd.DataFrame(cctv_inputs_list)
+
                     items_data = [
                         (t["cctv_out"]["indoor"], indoor_cams, t["units"]["pcs"]),
                         (t["cctv_out"]["fence"], fence_cams, t["units"]["pcs"]),
-                        (t["cctv_out"]["checkpoint"], checkpoint_cams, t["units"]["pcs"]),
-                        (t["cctv_out"]["anpr"], anpr_cams, t["units"]["pcs"]),
+                        (t["cctv_out"]["checkpoint"], checkpoint_cams, t["units"]["pcs"])
+                    ]
+
+                    # ANPR kutucuğu işaretlenmemişse raporda/çıktıda ANPR kamerasını hiç gösterme
+                    if inputs.get('cctv_use_anpr', False):
+                        items_data.append((t["cctv_out"]["anpr"], anpr_cams, t["units"]["pcs"]))
+
+                    items_data.extend([
                         (t["cctv_out"]["total"], total_cams, t["units"]["pcs"]),
                         (t["cctv_out"]["storage"], storage_tb, t["units"]["tb"]),
                         (t["cctv_out"]["switch"], poe_switches_24p, t["units"]["pcs"]),
                         (t["cctv_out"]["license"], total_cams, t["units"]["license"])
-                    ]
+                    ])
 
                     calculated_results[t["system_names"]["CCTV"]] = create_output_df(items_data, red_pct, t)
 
