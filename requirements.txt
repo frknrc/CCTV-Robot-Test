@@ -5,6 +5,5 @@ reportlab
 streamlit-javascript
 pytz
 XlsxWriter
-openpyxl
 google-genai
 google-generativeai
