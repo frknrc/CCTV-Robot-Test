@@ -697,7 +697,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (v1 ENDPOINT & 2.5-FLASH FIX) ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (GÜNCEL MODEL FIX) ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Asistanı")
     st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
@@ -745,28 +745,36 @@ def render_ulv_ai_bot(t_labels):
             with st.chat_message("assistant"):
                 with st.spinner("ULV Asistanı yanıtlıyor..."):
                     try:
-                        # v1 API endpoint'i açıkça belirtiliyor
-                        client = genai.Client(
-                            api_key=api_key,
-                            http_options={'api_version': 'v1'}
-                        )
+                        client = genai.Client(api_key=api_key)
+                        ai_reply = None
+                        last_err = None
                         
-                        response = client.models.generate_content(
-                            model="gemini-2.5-flash",
-                            contents=user_prompt,
-                            config=types.GenerateContentConfig(
-                                system_instruction=system_instruction
-                            )
-                        )
+                        # Google API'sinin doğrudan yönlendirdiği güncel modeller
+                        candidate_models = ["gemini-3.8-flash", "gemini-3-flash-preview"]
                         
-                        if response and response.text:
-                            ai_reply = response.text
+                        for m_name in candidate_models:
+                            try:
+                                response = client.models.generate_content(
+                                    model=m_name,
+                                    contents=user_prompt,
+                                    config=types.GenerateContentConfig(
+                                        system_instruction=system_instruction
+                                    )
+                                )
+                                if response and response.text:
+                                    ai_reply = response.text
+                                    break
+                            except Exception as err:
+                                last_err = err
+                                continue
+
+                        if ai_reply:
                             st.markdown(ai_reply)
                             st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
                         else:
-                            st.error("Model boş yanıt döndürdü.")
+                            st.error(f"Hata oluştu: {str(last_err)}")
                     except Exception as e:
-                        st.error(f"Hata oluştu: {str(e)}")
+                        st.error(f"Bağlantı Hatası: {str(e)}")
 
 # --- BAŞLIK VE DİL SEÇİMİ ---
 c_lang, c_country, c_city = st.columns(3)
