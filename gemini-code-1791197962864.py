@@ -698,7 +698,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (STABLE MODEL & FALLBACK) ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (GÜNCEL MODEL & HIZLI FIX) ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Asistanı")
     st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
@@ -742,16 +742,13 @@ def render_ulv_ai_bot(t_labels):
             with st.chat_message("assistant"):
                 with st.spinner("ULV Asistanı yanıtlıyor..."):
                     try:
-                        client = genai.Client(
-                            api_key=api_key,
-                            http_options=types.HttpOptions(timeout=15000)
-                        )
+                        client = genai.Client(api_key=api_key)
                         
                         ai_reply = None
                         last_err = None
                         
-                        # API'de en yüksek erişilebilirliğe sahip kararlı modeller
-                        for m_name in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+                        # Güncel ve sorunsuz çalışan model listesi
+                        for m_name in ["gemini-3.8-flash", "gemini-3.5-flash"]:
                             try:
                                 response = client.models.generate_content(
                                     model=m_name,
@@ -774,9 +771,9 @@ def render_ulv_ai_bot(t_labels):
                         else:
                             st.error(f"Yanıt alınamadı. Hata: {str(last_err)}")
                     except Exception as e:
-                        st.error(f"Hata oluştu: {str(e)}")
+                        st.error(f"Bağlantı Hatası: {str(e)}")
 
-# --- ŞİRKET LOGOSU (ORİJİNAL TAV TECHNOLOGIES AMBLEMİ) ---
+# --- ŞİRKET LOGOSU (TAV TECHNOLOGIES ORİJİNAL VEKTÖREL LOGO DÜZENİ) ---
 logo_path = None
 for p in ["logo.png", "logo.jpg", "logo.jpeg"]:
     if os.path.exists(p):
@@ -784,22 +781,25 @@ for p in ["logo.png", "logo.jpg", "logo.jpeg"]:
         break
 
 if logo_path:
-    st.image(logo_path, width=280)
+    st.image(logo_path, width=300)
 else:
-    # Orijinal TAV Technologies Küre & Halka Logosunun Vektörel Hali
+    # TAV Technologies Orijinal Amblem ve Tipografi Tasarımı (Karanlık Temaya %100 Uyumlu)
     st.markdown(
         """
-        <div style="margin-bottom: 25px; font-family: Arial, sans-serif;">
+        <div style="margin-bottom: 25px; font-family: 'Segoe UI', Arial, sans-serif;">
             <div style="display: flex; align-items: center; gap: 14px;">
-                <svg width="50" height="50" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="50" r="38" fill="#1D3557" stroke="#2B6CB0" stroke-width="3"/>
-                    <path d="M 18 50 A 35 15 0 1 0 82 50 A 35 15 0 1 0 18 50" stroke="#48BB78" stroke-width="4" fill="none" transform="rotate(-25 50 50)"/>
-                    <circle cx="50" cy="50" r="28" stroke="#E2E8F0" stroke-width="2" fill="none" stroke-dasharray="4 3"/>
-                    <path d="M 30 50 Q 50 30 70 50 Q 50 70 30 50" fill="#2B6CB0" opacity="0.6"/>
+                <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="42" fill="#0A2540"/>
+                    <ellipse cx="50" cy="50" rx="38" ry="16" stroke="#00A8E8" stroke-width="5" fill="none" transform="rotate(-28 50 50)"/>
+                    <circle cx="50" cy="50" r="14" fill="#0077B6"/>
+                    <circle cx="50" cy="50" r="6" fill="#FFFFFF"/>
                 </svg>
                 <div>
-                    <div style="font-size: 26px; font-weight: 800; color: #FFFFFF; letter-spacing: 1.5px; line-height: 1.1;">
-                        TAV <span style="color: #A0AEC0; font-weight: 300;">TECHNOLOGIES</span>
+                    <div style="font-size: 26px; font-weight: 900; color: #FFFFFF; letter-spacing: 2px; line-height: 1;">
+                        TAV <span style="color: #63B3ED; font-weight: 300;">TECHNOLOGIES</span>
+                    </div>
+                    <div style="font-size: 9px; color: #A0AEC0; letter-spacing: 2.5px; font-weight: 600; margin-top: 4px;">
+                        A TAV AIRPORTS & ADP GROUP COMPANY
                     </div>
                 </div>
             </div>
@@ -807,6 +807,7 @@ else:
         """,
         unsafe_allow_html=True
     )
+
 # --- BAŞLIK VE DİL SEÇİMİ ---
 c_lang, c_country, c_city = st.columns(3)
 with c_lang:
