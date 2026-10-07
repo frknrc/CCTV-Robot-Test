@@ -697,7 +697,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (GÜNCEL OFFICIAL GOOGLE-GENAI SDK) ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (GÜNCEL MODEL SEÇİMİ) ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Asistanı")
     st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
@@ -706,8 +706,6 @@ def render_ulv_ai_bot(t_labels):
     if not api_key:
         st.info("💡 AI Asistanı aktif etmek için `GEMINI_API_KEY` eklenmelidir.")
         return
-
-    from google import genai
 
     system_instruction = """
     Sen ULV Systems (TAV Technologies) bünyesinde çalışan kıdemli bir Zayıf Akım Sistemleri Uzmanısın (ELV Specialist).
@@ -745,22 +743,36 @@ def render_ulv_ai_bot(t_labels):
                 with st.spinner("ULV Asistanı yanıtlıyor..."):
                     try:
                         client = genai.Client(api_key=api_key)
-                        response = client.models.generate_content(
-                            model="gemini-2.5-flash",
-                            contents=user_prompt,
-                            config={
-                                "system_instruction": system_instruction
-                            }
-                        )
-                        if response and response.text:
-                            ai_reply = response.text
+                        ai_reply = None
+                        last_error = None
+                        
+                        # API tarafından doğrudan önerilen güncel modeller
+                        candidate_models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]
+                        
+                        for m_name in candidate_models:
+                            try:
+                                response = client.models.generate_content(
+                                    model=m_name,
+                                    contents=user_prompt,
+                                    config={
+                                        "system_instruction": system_instruction
+                                    }
+                                )
+                                if response and response.text:
+                                    ai_reply = response.text
+                                    break
+                            except Exception as err:
+                                last_error = err
+                                continue
+
+                        if ai_reply:
                             st.markdown(ai_reply)
                             st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
                         else:
-                            st.error("Yanıt alınamadı.")
+                            st.error(f"Hata oluştu: {str(last_error)}")
                     except Exception as e:
-                        st.error(f"Hata oluştu: {str(e)}")
-                        
+                        st.error(f"Baglanti hatasi: {str(e)}")
+
 # --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
 default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
 
@@ -809,11 +821,9 @@ st.markdown("---")
 col_left, col_right = st.columns([2.2, 1.2], gap="large")
 
 with col_right:
-    # SAĞ KOLON: SİSTEM SEÇİMİNDEN BAĞIMSIZ DAİMA GÖRÜNÜR AI CHAT
     render_ulv_ai_bot(t)
 
 with col_left:
-    # SOL KOLON: PROJE BİLGİSİ VE SİSTEM SEÇİMİ
     project_name = st.text_input(
         t["project_name_label"],
         value="",
@@ -952,7 +962,6 @@ with col_left:
                 display_proj_name = project_name.strip()
 
                 for sys in selected_systems:
-                    # 1. CCTV HESAPLAMA
                     if t["system_names"]["CCTV"] in sys:
                         red_pct = inputs.get('cctv_redundancy', 0)
                         sqm = inputs.get('cctv_sqm') or 0
@@ -1005,7 +1014,6 @@ with col_left:
 
                         calculated_results[t["system_names"]["CCTV"]] = create_output_df(items_data, red_pct, t)
 
-                    # 2. ACS HESAPLAMA
                     elif t["system_names"]["ACS"] in sys:
                         red_pct = inputs.get('acs_redundancy', 0)
                         single_doors = inputs.get('acs_single_doors') or 0
@@ -1041,7 +1049,6 @@ with col_left:
 
                         calculated_results[t["system_names"]["ACS"]] = create_output_df(items_data, red_pct, t)
 
-                    # 3. FAS HESAPLAMA
                     elif t["system_names"]["FAS"] in sys:
                         red_pct = inputs.get('fas_redundancy', 0)
                         sqm = inputs.get('fas_sqm') or 0
@@ -1074,7 +1081,6 @@ with col_left:
 
                         calculated_results[t["system_names"]["FAS"]] = create_output_df(items_data, red_pct, t)
 
-                    # 4. PA/VA HESAPLAMA
                     elif t["system_names"]["PA/VA"] in sys:
                         red_pct = inputs.get('pava_redundancy', 0)
                         sqm = inputs.get('pava_sqm') or 0
@@ -1102,7 +1108,6 @@ with col_left:
 
                         calculated_results[t["system_names"]["PA/VA"]] = create_output_df(items_data, red_pct, t)
 
-                # --- EKRANDA SONUÇLARI GÖSTERME ---
                 st.success(t["report_success"].format(project=display_proj_name))
 
                 res_tabs = st.tabs(list(calculated_results.keys()))
@@ -1116,7 +1121,6 @@ with col_left:
                             st.markdown(f"#### {t['outputs_header']}")
                             st.dataframe(calculated_results[sys_key], use_container_width=True, hide_index=True)
 
-                # --- İNDİRME ALANI (PDF & EXCEL) ---
                 st.markdown("---")
                 st.subheader(t["download_section"])
 
