@@ -697,20 +697,20 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (STABLE GOOGLE SDK) ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (SABİT SAĞ KANAT YAPISI) ---
 def render_ulv_ai_bot(t_labels):
-    st.markdown("### 🤖 ULV Systems AI Teknik Asistanı")
-    st.caption("Zayıf akım sistemleri, TAV Technologies standartları, mühendislik katsayıları ve tasarım kriterleri hakkında teknik sorularınızı sorun.")
+    st.markdown("### 🤖 ULV Systems AI Asistanı")
+    st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
 
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        st.info("💡 AI Asistanı kullanabilmek için sunucu/ortam değişkeni olarak `GEMINI_API_KEY` tanımlanmış olmalıdır.")
+        st.info("💡 AI Asistanı aktif etmek için `GEMINI_API_KEY` eklenmelidir.")
         return
 
     try:
         genai.configure(api_key=api_key)
     except Exception as e:
-        st.error(f"Gemini API Yapılandırma Hatası: {str(e)}")
+        st.error(f"Gemini API Hatası: {str(e)}")
         return
 
     system_instruction = """
@@ -725,46 +725,56 @@ def render_ulv_ai_bot(t_labels):
     1. Çok profesyonel, teknik olarak kesin ve yardımcı bir dilde yanıt ver.
     2. Havalimanı ve büyük ölçekli bina standartlarına (ICAO, IATA, EN54, NFPA) uygun mühendislik yanıtları ver.
     3. Kullanıcıların botun hesaplama katsayıları ve mantığı hakkındaki sorularını ULV Systems standartlarına göre netleştir.
-    4. Gereksiz laf kalabalığı yapma, doğrudan net, teknik ve maddeli açıklamalar sun.
+    4. Doğrudan net, teknik ve maddeli açıklamalar sun.
     """
 
     if "ai_chat_history" not in st.session_state:
         st.session_state.ai_chat_history = []
 
-    for msg in st.session_state.ai_chat_history:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+    # Chat Kutusu İçeriği (Yükseklik Sınırlamalı)
+    chat_container = st.container(height=450)
+    with chat_container:
+        for msg in st.session_state.ai_chat_history:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
 
-    if user_prompt := st.chat_input("Teknik sorunuzu yazın (Örn: CCTV depolama TB hesabı nasıl yapılıyor?)..."):
+    if user_prompt := st.chat_input("Sisteme dair bir teknik soru sorun..."):
         st.session_state.ai_chat_history.append({"role": "user", "content": user_prompt})
-        with st.chat_message("user"):
-            st.markdown(user_prompt)
+        
+        with chat_container:
+            with st.chat_message("user"):
+                st.markdown(user_prompt)
 
-        with st.chat_message("assistant"):
-            with st.spinner("ULV Systems Teknik Uzmanı yanıtlıyor..."):
-                try:
-                    model = genai.GenerativeModel(
-                        model_name='gemini-1.5-flash',
-                        system_instruction=system_instruction
-                    )
-                    response = model.generate_content(user_prompt)
-                    ai_reply = response.text
-                    st.markdown(ai_reply)
-                    st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
-                except Exception as e:
-                    st.error(f"Yanıt üretilirken bir hata oluştu: {str(e)}")
+            with st.chat_message("assistant"):
+                with st.spinner("ULV Asistanı yanıtlıyor..."):
+                    try:
+                        model = genai.GenerativeModel(
+                            model_name='gemini-1.5-flash',
+                            system_instruction=system_instruction
+                        )
+                        response = model.generate_content(user_prompt)
+                        ai_reply = response.text
+                        st.markdown(ai_reply)
+                        st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
+                    except Exception as e:
+                        st.error(f"Hata oluştu: {str(e)}")
 
 # --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
 default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
 
-col_logo, col_space = st.columns([1, 2])
-with col_logo:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=280)
-    elif os.path.exists("logo.jpg"):
-        st.image("logo.jpg", width=280)
-    else:
-        st.image(default_logo_url, width=280)
+if os.path.exists("logo.png"):
+    st.image("logo.png", width=320)
+elif os.path.exists("logo.jpg"):
+    st.image("logo.jpg", width=320)
+else:
+    st.markdown(
+        f"""
+        <div style="margin-bottom: 25px;">
+            <img src="{default_logo_url}" width="320" style="filter: brightness(0) invert(1) drop-shadow(0px 0px 1px rgba(255,255,255,0.5));">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 # --- BAŞLIK VE DİL SEÇİMİ ---
 c_lang, c_country, c_city = st.columns(3)
@@ -793,352 +803,356 @@ st.caption(t["caption"])
 
 st.markdown("---")
 
-# --- PROJE BİLGİSİ VE SİSTEM SEÇİMİ ---
-project_name = st.text_input(
-    t["project_name_label"],
-    value="",
-    placeholder=t["project_name_placeholder"]
-)
+# --- SAYFAYI İKİ ANA KOLONA BÖLME (SOL: HESAPLAMA, SAĞ: AI ASİSTAN) ---
+col_left, col_right = st.columns([2.2, 1.2], gap="large")
 
-st.subheader(t["select_systems_title"])
+with col_right:
+    # SAĞ KOLON: SİSTEM SEÇİMİNDEN BAĞIMSIZ DAİMA GÖRÜNÜR AI CHAT
+    render_ulv_ai_bot(t)
 
-sys_options = [
-    t["system_names"]["CCTV"],
-    t["system_names"]["ACS"],
-    t["system_names"]["FAS"],
-    t["system_names"]["PA/VA"]
-]
+with col_left:
+    # SOL KOLON: PROJE BİLGİSİ VE SİSTEM SEÇİMİ
+    project_name = st.text_input(
+        t["project_name_label"],
+        value="",
+        placeholder=t["project_name_placeholder"]
+    )
 
-selected_systems = st.multiselect(
-    t["select_systems_label"],
-    sys_options,
-    default=[],
-    placeholder=t["multiselect_placeholder"]
-)
+    st.subheader(t["select_systems_title"])
 
-st.markdown("---")
+    sys_options = [
+        t["system_names"]["CCTV"],
+        t["system_names"]["ACS"],
+        t["system_names"]["FAS"],
+        t["system_names"]["PA/VA"]
+    ]
 
-if not selected_systems:
-    st.warning(t["warning_no_system"])
-else:
-    all_tab_titles = list(selected_systems) + [t["ai_tab_name"]]
-    system_tabs = st.tabs(all_tab_titles)
-    inputs = {}
-
-    for i, sys in enumerate(selected_systems):
-        with system_tabs[i]:
-            if t["system_names"]["CCTV"] in sys:
-                st.markdown(f"### {t['cctv_title']}")
-                
-                inputs['cctv_airport_type'] = st.radio(
-                    t["cctv_scope"],
-                    [t["cctv_opt1"], t["cctv_opt2"]],
-                    index=None,
-                    key="cctv_type"
-                )
-                
-                c1, c2 = st.columns(2)
-                with c1:
-                    inputs['cctv_sqm'] = st.number_input(t["cctv_sqm"], min_value=0, value=None, step=1000, key="c_sqm", placeholder=f"{t['ph_example']}: 75000")
-                    inputs['cctv_checkpoints'] = st.number_input(t["cctv_checkpoints"], min_value=0, value=None, step=1, key="c_check", placeholder=f"{t['ph_example']}: 20")
-                    inputs['cctv_control_rooms'] = st.number_input(t["cctv_cr"], min_value=0, value=None, step=1, key="c_cr", placeholder=f"{t['ph_example']}: 1")
-                    inputs['cctv_remote_views'] = st.number_input(t["cctv_rem"], min_value=0, value=None, step=1, key="c_rem", placeholder=f"{t['ph_example']}: 4")
-                with c2:
-                    inputs['cctv_fence_m'] = st.number_input(t["cctv_fence"], min_value=0, value=None, step=100, key="c_fence", placeholder=f"{t['ph_example']}: 8000")
-                    inputs['cctv_operators'] = st.number_input(t["cctv_op"], min_value=0, value=None, step=1, key="c_op", placeholder=f"{t['ph_example']}: 6")
-                    inputs['cctv_storage_days'] = st.selectbox(t["cctv_days"], [30, 60, 90, 180], index=None, key="c_days", placeholder=t["ph_select"])
-                    inputs['cctv_resolution'] = st.selectbox(t["cctv_res"], ["2MP", "4MP", "8MP"], index=None, key="c_res", placeholder=t["ph_select"])
-
-                st.markdown("---")
-                inputs['cctv_use_anpr'] = st.checkbox(t["cctv_anpr_chk"], value=False, key="c_anpr_chk")
-
-                if inputs['cctv_use_anpr']:
-                    ca1, ca2 = st.columns(2)
-                    with ca1:
-                        inputs['cctv_lanes'] = st.number_input(t["cctv_lanes"], min_value=0, value=None, step=1, key="c_lanes", placeholder=f"{t['ph_example']}: 8")
-                    with ca2:
-                        inputs['cctv_anpr_speed'] = st.selectbox(t["cctv_speed"], [t["cctv_speed_low"], t["cctv_speed_high"]], index=None, key="c_speed", placeholder=t["ph_select"])
-                else:
-                    inputs['cctv_lanes'] = 0
-
-                inputs['cctv_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="c_red"
-                )
-
-            elif t["system_names"]["ACS"] in sys:
-                st.markdown(f"### {t['acs_title']}")
-                
-                ac1, ac2 = st.columns(2)
-                with ac1:
-                    st.markdown(f"**{t['acs_doors_sec']}**")
-                    inputs['acs_single_doors'] = st.number_input(t["acs_s_doors"], min_value=0, value=None, step=1, key="a_s_doors", placeholder=f"{t['ph_example']}: 80")
-                    inputs['acs_double_doors'] = st.number_input(t["acs_d_doors"], min_value=0, value=None, step=1, key="a_d_doors", placeholder=f"{t['ph_example']}: 20")
-                    inputs['acs_turnstiles'] = st.number_input(t["acs_turnstiles"], min_value=0, value=None, step=1, key="a_turn", placeholder=f"{t['ph_example']}: 16")
-                with ac2:
-                    st.markdown(f"**{t['acs_users_sec']}**")
-                    inputs['acs_users'] = st.number_input(t["acs_users"], min_value=0, value=None, step=100, key="a_users", placeholder=f"{t['ph_example']}: 3000")
-                    inputs['acs_face_rec_qty'] = st.number_input(t["acs_face"], min_value=0, value=None, step=1, key="a_face_qty", placeholder=f"{t['ph_example']}: 10")
-                    inputs['acs_fingerprint_qty'] = st.number_input(t["acs_finger"], min_value=0, value=None, step=1, key="a_finger_qty", placeholder=f"{t['ph_example']}: 15")
-
-                inputs['acs_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="a_red"
-                )
-
-            elif t["system_names"]["FAS"] in sys:
-                st.markdown(f"### {t['fas_title']}")
-                
-                fc1, fc2 = st.columns(2)
-                with fc1:
-                    inputs['fas_sqm'] = st.number_input(t["fas_sqm"], min_value=0, value=None, step=1000, key="f_sqm", placeholder=f"{t['ph_example']}: 75000")
-                    inputs['fas_raised_floor'] = st.checkbox(t["fas_rf"], value=False, key="f_rf")
-                with fc2:
-                    inputs['fas_beam_detectors'] = st.number_input(t["fas_beam"], min_value=0, value=None, step=1, key="f_beam", placeholder=f"{t['ph_example']}: 6")
-
-                inputs['fas_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="f_red"
-                )
-
-            elif t["system_names"]["PA/VA"] in sys:
-                st.markdown(f"### {t['pava_title']}")
-                
-                pc1, pc2 = st.columns(2)
-                with pc1:
-                    inputs['pava_sqm'] = st.number_input(t["pava_sqm"], min_value=0, value=None, step=1000, key="p_sqm", placeholder=f"{t['ph_example']}: 75000")
-                    inputs['pava_zones'] = st.number_input(t["pava_zones"], min_value=0, value=None, step=1, key="p_zones", placeholder=f"{t['ph_example']}: 16")
-                with pc2:
-                    inputs['pava_environment'] = st.selectbox(t["pava_env"], [t["pava_env_std"], t["pava_env_noisy"], t["pava_env_quiet"]], index=None, key="p_env", placeholder=t["ph_select"])
-
-                inputs['pava_redundancy'] = st.number_input(
-                    t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="p_red"
-                )
-
-    with system_tabs[-1]:
-        render_ulv_ai_bot(t)
+    selected_systems = st.multiselect(
+        t["select_systems_label"],
+        sys_options,
+        default=[],
+        placeholder=t["multiselect_placeholder"]
+    )
 
     st.markdown("---")
-    submit_button = st.button(t["submit_btn"], use_container_width=True, type="primary")
 
-    # --- HESAPLAMA MANTIĞI VE SONUÇLAR ---
-    if submit_button:
-        if not project_name or not project_name.strip():
-            st.error(t["warning_no_project"])
-        else:
-            calculated_results = {}
-            inputs_summary = {}
+    if not selected_systems:
+        st.warning(t["warning_no_system"])
+    else:
+        system_tabs = st.tabs(selected_systems)
+        inputs = {}
 
-            target_tz_str = COUNTRY_TIMEZONES.get(selected_country, "Europe/Istanbul")
-            try:
-                user_tz = pytz.timezone(target_tz_str)
-            except Exception:
-                user_tz = pytz.timezone("Europe/Istanbul")
-
-            now_str = datetime.now(user_tz).strftime("%d.%m.%Y - %H:%M")
-            display_proj_name = project_name.strip()
-
-            for sys in selected_systems:
-                # 1. CCTV HESAPLAMA
+        for i, sys in enumerate(selected_systems):
+            with system_tabs[i]:
                 if t["system_names"]["CCTV"] in sys:
-                    red_pct = inputs.get('cctv_redundancy', 0)
-                    sqm = inputs.get('cctv_sqm') or 0
-                    fence_m = inputs.get('cctv_fence_m') or 0
-                    checkpoints = inputs.get('cctv_checkpoints') or 0
-                    lanes = inputs.get('cctv_lanes') or 0
-                    days = inputs.get('cctv_storage_days') or 60
-                    resolution = inputs.get('cctv_resolution') or "4MP"
-                    airport_type = inputs.get('cctv_airport_type') or t["cctv_opt1"]
-
-                    sqm_per_cam = 60 if airport_type == t["cctv_opt1"] else 90
-                    fence_m_per_cam = 40 if airport_type == t["cctv_opt1"] else 60
-
-                    indoor_cams = math.ceil(sqm / sqm_per_cam) if sqm > 0 else 0
-                    fence_cams = math.ceil(fence_m / fence_m_per_cam) if fence_m > 0 else 0
-                    checkpoint_cams = checkpoints * 4
-                    anpr_cams = lanes * 2 if inputs.get('cctv_use_anpr', False) else 0
-
-                    total_cams = indoor_cams + fence_cams + checkpoint_cams + anpr_cams
+                    st.markdown(f"### {t['cctv_title']}")
                     
-                    bitrate_map = {"2MP": 3, "4MP": 5, "8MP": 10}
-                    mbps_per_cam = bitrate_map.get(resolution, 5)
-                    storage_tb = math.ceil((total_cams * mbps_per_cam * 3600 * 24 * days) / (8 * 1024 * 1024)) if total_cams > 0 else 0
+                    inputs['cctv_airport_type'] = st.radio(
+                        t["cctv_scope"],
+                        [t["cctv_opt1"], t["cctv_opt2"]],
+                        index=None,
+                        key="cctv_type"
+                    )
+                    
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        inputs['cctv_sqm'] = st.number_input(t["cctv_sqm"], min_value=0, value=None, step=1000, key="c_sqm", placeholder=f"{t['ph_example']}: 75000")
+                        inputs['cctv_checkpoints'] = st.number_input(t["cctv_checkpoints"], min_value=0, value=None, step=1, key="c_check", placeholder=f"{t['ph_example']}: 20")
+                        inputs['cctv_control_rooms'] = st.number_input(t["cctv_cr"], min_value=0, value=None, step=1, key="c_cr", placeholder=f"{t['ph_example']}: 1")
+                        inputs['cctv_remote_views'] = st.number_input(t["cctv_rem"], min_value=0, value=None, step=1, key="c_rem", placeholder=f"{t['ph_example']}: 4")
+                    with c2:
+                        inputs['cctv_fence_m'] = st.number_input(t["cctv_fence"], min_value=0, value=None, step=100, key="c_fence", placeholder=f"{t['ph_example']}: 8000")
+                        inputs['cctv_operators'] = st.number_input(t["cctv_op"], min_value=0, value=None, step=1, key="c_op", placeholder=f"{t['ph_example']}: 6")
+                        inputs['cctv_storage_days'] = st.selectbox(t["cctv_days"], [30, 60, 90, 180], index=None, key="c_days", placeholder=t["ph_select"])
+                        inputs['cctv_resolution'] = st.selectbox(t["cctv_res"], ["2MP", "4MP", "8MP"], index=None, key="c_res", placeholder=t["ph_select"])
 
-                    poe_switches_24p = math.ceil(total_cams / 20) if total_cams > 0 else 0
+                    st.markdown("---")
+                    inputs['cctv_use_anpr'] = st.checkbox(t["cctv_anpr_chk"], value=False, key="c_anpr_chk")
 
-                    inputs_summary[t["system_names"]["CCTV"]] = pd.DataFrame([
-                        {t["col_input_param"]: t["cctv_scope"], t["col_input_val"]: airport_type, t["col_unit"]: t["units"]["none"]},
-                        {t["col_input_param"]: t["cctv_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
-                        {t["col_input_param"]: t["cctv_checkpoints"], t["col_input_val"]: checkpoints, t["col_unit"]: t["units"]["point"]},
-                        {t["col_input_param"]: t["cctv_fence"], t["col_input_val"]: fence_m, t["col_unit"]: t["units"]["meter"]},
-                        {t["col_input_param"]: t["cctv_lanes"], t["col_input_val"]: lanes, t["col_unit"]: t["units"]["lane"]},
-                        {t["col_input_param"]: t["cctv_cr"], t["col_input_val"]: inputs.get('cctv_control_rooms') or 0, t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["cctv_op"], t["col_input_val"]: inputs.get('cctv_operators') or 0, t["col_unit"]: t["units"]["desk"]},
-                        {t["col_input_param"]: t["cctv_days"], t["col_input_val"]: days, t["col_unit"]: t["units"]["day"]},
-                        {t["col_input_param"]: t["cctv_res"], t["col_input_val"]: resolution, t["col_unit"]: t["units"]["none"]},
-                        {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
-                    ])
+                    if inputs['cctv_use_anpr']:
+                        ca1, ca2 = st.columns(2)
+                        with ca1:
+                            inputs['cctv_lanes'] = st.number_input(t["cctv_lanes"], min_value=0, value=None, step=1, key="c_lanes", placeholder=f"{t['ph_example']}: 8")
+                        with ca2:
+                            inputs['cctv_anpr_speed'] = st.selectbox(t["cctv_speed"], [t["cctv_speed_low"], t["cctv_speed_high"]], index=None, key="c_speed", placeholder=t["ph_select"])
+                    else:
+                        inputs['cctv_lanes'] = 0
 
-                    items_data = [
-                        (t["cctv_out"]["indoor"], indoor_cams, t["units"]["pcs"]),
-                        (t["cctv_out"]["fence"], fence_cams, t["units"]["pcs"]),
-                        (t["cctv_out"]["checkpoint"], checkpoint_cams, t["units"]["pcs"]),
-                        (t["cctv_out"]["anpr"], anpr_cams, t["units"]["pcs"]),
-                        (t["cctv_out"]["total"], total_cams, t["units"]["pcs"]),
-                        (t["cctv_out"]["storage"], storage_tb, t["units"]["tb"]),
-                        (t["cctv_out"]["switch"], poe_switches_24p, t["units"]["pcs"]),
-                        (t["cctv_out"]["license"], total_cams, t["units"]["license"])
-                    ]
+                    inputs['cctv_redundancy'] = st.number_input(
+                        t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="c_red"
+                    )
 
-                    calculated_results[t["system_names"]["CCTV"]] = create_output_df(items_data, red_pct, t)
-
-                # 2. ACS HESAPLAMA
                 elif t["system_names"]["ACS"] in sys:
-                    red_pct = inputs.get('acs_redundancy', 0)
-                    single_doors = inputs.get('acs_single_doors') or 0
-                    double_doors = inputs.get('acs_double_doors') or 0
-                    turnstiles = inputs.get('acs_turnstiles') or 0
-                    users = inputs.get('acs_users') or 0
-                    face_qty = inputs.get('acs_face_rec_qty') or 0
-                    finger_qty = inputs.get('acs_fingerprint_qty') or 0
+                    st.markdown(f"### {t['acs_title']}")
+                    
+                    ac1, ac2 = st.columns(2)
+                    with ac1:
+                        st.markdown(f"**{t['acs_doors_sec']}**")
+                        inputs['acs_single_doors'] = st.number_input(t["acs_s_doors"], min_value=0, value=None, step=1, key="a_s_doors", placeholder=f"{t['ph_example']}: 80")
+                        inputs['acs_double_doors'] = st.number_input(t["acs_d_doors"], min_value=0, value=None, step=1, key="a_d_doors", placeholder=f"{t['ph_example']}: 20")
+                        inputs['acs_turnstiles'] = st.number_input(t["acs_turnstiles"], min_value=0, value=None, step=1, key="a_turn", placeholder=f"{t['ph_example']}: 16")
+                    with ac2:
+                        st.markdown(f"**{t['acs_users_sec']}**")
+                        inputs['acs_users'] = st.number_input(t["acs_users"], min_value=0, value=None, step=100, key="a_users", placeholder=f"{t['ph_example']}: 3000")
+                        inputs['acs_face_rec_qty'] = st.number_input(t["acs_face"], min_value=0, value=None, step=1, key="a_face_qty", placeholder=f"{t['ph_example']}: 10")
+                        inputs['acs_fingerprint_qty'] = st.number_input(t["acs_finger"], min_value=0, value=None, step=1, key="a_finger_qty", placeholder=f"{t['ph_example']}: 15")
 
-                    total_doors = single_doors + double_doors
-                    readers = (single_doors * 2) + (double_doors * 2) + (turnstiles * 2)
-                    controllers = math.ceil((total_doors + turnstiles) / 4) if (total_doors + turnstiles) > 0 else 0
+                    inputs['acs_redundancy'] = st.number_input(
+                        t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="a_red"
+                    )
 
-                    inputs_summary[t["system_names"]["ACS"]] = pd.DataFrame([
-                        {t["col_input_param"]: t["acs_s_doors"], t["col_input_val"]: single_doors, t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["acs_d_doors"], t["col_input_val"]: double_doors, t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["acs_turnstiles"], t["col_input_val"]: turnstiles, t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["acs_users"], t["col_input_val"]: users, t["col_unit"]: t["units"]["user"]},
-                        {t["col_input_param"]: t["acs_face"], t["col_input_val"]: face_qty, t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["acs_finger"], t["col_input_val"]: finger_qty, t["col_unit"]: t["units"]["pcs"]},
-                        {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
-                    ])
-
-                    items_data = [
-                        (t["acs_out"]["doors"], total_doors, t["units"]["pcs"]),
-                        (t["acs_out"]["turnstiles"], turnstiles, t["units"]["pcs"]),
-                        (t["acs_out"]["readers"], readers, t["units"]["pcs"]),
-                        (t["acs_out"]["face"], face_qty, t["units"]["pcs"]),
-                        (t["acs_out"]["finger"], finger_qty, t["units"]["pcs"]),
-                        (t["acs_out"]["controllers"], controllers, t["units"]["pcs"]),
-                        (t["acs_out"]["users"], users, t["units"]["user"])
-                    ]
-
-                    calculated_results[t["system_names"]["ACS"]] = create_output_df(items_data, red_pct, t)
-
-                # 3. FAS HESAPLAMA
                 elif t["system_names"]["FAS"] in sys:
-                    red_pct = inputs.get('fas_redundancy', 0)
-                    sqm = inputs.get('fas_sqm') or 0
-                    beam_qty = inputs.get('fas_beam_detectors') or 0
+                    st.markdown(f"### {t['fas_title']}")
+                    
+                    fc1, fc2 = st.columns(2)
+                    with fc1:
+                        inputs['fas_sqm'] = st.number_input(t["fas_sqm"], min_value=0, value=None, step=1000, key="f_sqm", placeholder=f"{t['ph_example']}: 75000")
+                        inputs['fas_raised_floor'] = st.checkbox(t["fas_rf"], value=False, key="f_rf")
+                    with fc2:
+                        inputs['fas_beam_detectors'] = st.number_input(t["fas_beam"], min_value=0, value=None, step=1, key="f_beam", placeholder=f"{t['ph_example']}: 6")
 
-                    base_detectors = math.ceil(sqm / 60) if sqm > 0 else 0
-                    if inputs.get('fas_raised_floor', False) and base_detectors > 0:
-                        base_detectors = math.ceil(base_detectors * 1.5)
+                    inputs['fas_redundancy'] = st.number_input(
+                        t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="f_red"
+                    )
 
-                    manual_call_points = math.ceil(sqm / 500) if sqm > 0 else 0
-                    sounders_flashing = math.ceil(sqm / 400) if sqm > 0 else 0
-                    loops = math.ceil(base_detectors / 200) if base_detectors > 0 else 0
-                    panels = math.ceil(loops / 8) if loops > 0 else 0
-
-                    inputs_summary[t["system_names"]["FAS"]] = pd.DataFrame([
-                        {t["col_input_param"]: t["fas_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
-                        {t["col_input_param"]: t["fas_rf"], t["col_input_val"]: t["units"]["yes"] if inputs.get('fas_raised_floor') else t["units"]["no"], t["col_unit"]: t["units"]["none"]},
-                        {t["col_input_param"]: t["fas_beam"], t["col_input_val"]: beam_qty, t["col_unit"]: t["units"]["pair"]},
-                        {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
-                    ])
-
-                    items_data = [
-                        (t["fas_out"]["detectors"], base_detectors, t["units"]["pcs"]),
-                        (t["fas_out"]["beam"], beam_qty, t["units"]["pair"]),
-                        (t["fas_out"]["buttons"], manual_call_points, t["units"]["pcs"]),
-                        (t["fas_out"]["sounders"], sounders_flashing, t["units"]["pcs"]),
-                        (t["fas_out"]["loops"], loops, t["units"]["loop"]),
-                        (t["fas_out"]["panels"], panels, t["units"]["pcs"])
-                    ]
-
-                    calculated_results[t["system_names"]["FAS"]] = create_output_df(items_data, red_pct, t)
-
-                # 4. PA/VA HESAPLAMA
                 elif t["system_names"]["PA/VA"] in sys:
-                    red_pct = inputs.get('pava_redundancy', 0)
-                    sqm = inputs.get('pava_sqm') or 0
-                    zones = inputs.get('pava_zones') or 0
-                    env = inputs.get('pava_environment') or t["pava_env_std"]
+                    st.markdown(f"### {t['pava_title']}")
+                    
+                    pc1, pc2 = st.columns(2)
+                    with pc1:
+                        inputs['pava_sqm'] = st.number_input(t["pava_sqm"], min_value=0, value=None, step=1000, key="p_sqm", placeholder=f"{t['ph_example']}: 75000")
+                        inputs['pava_zones'] = st.number_input(t["pava_zones"], min_value=0, value=None, step=1, key="p_zones", placeholder=f"{t['ph_example']}: 16")
+                    with pc2:
+                        inputs['pava_environment'] = st.selectbox(t["pava_env"], [t["pava_env_std"], t["pava_env_noisy"], t["pava_env_quiet"]], index=None, key="p_env", placeholder=t["ph_select"])
 
-                    speakers = math.ceil(sqm / 50) if sqm > 0 else 0
-                    watts_per_spk = 6 if env == t["pava_env_noisy"] else 3
-                    total_power_watts = math.ceil(speakers * watts_per_spk * 1.25) if speakers > 0 else 0
-                    amplifiers = math.ceil(total_power_watts / 1000) if total_power_watts > 0 else 0
+                    inputs['pava_redundancy'] = st.number_input(
+                        t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="p_red"
+                    )
 
-                    inputs_summary[t["system_names"]["PA/VA"]] = pd.DataFrame([
-                        {t["col_input_param"]: t["pava_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
-                        {t["col_input_param"]: t["pava_zones"], t["col_input_val"]: zones, t["col_unit"]: t["units"]["zone"]},
-                        {t["col_input_param"]: t["pava_env"], t["col_input_val"]: env, t["col_unit"]: t["units"]["none"]},
-                        {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
-                    ])
+        st.markdown("---")
+        submit_button = st.button(t["submit_btn"], use_container_width=True, type="primary")
 
-                    items_data = [
-                        (t["pava_out"]["speakers"], speakers, t["units"]["pcs"]),
-                        (t["pava_out"]["power"], total_power_watts, t["units"]["watt"]),
-                        (t["pava_out"]["amps"], amplifiers, t["units"]["pcs"]),
-                        (t["pava_out"]["zones"], zones, t["units"]["zone"])
-                    ]
+        # --- HESAPLAMA MANTIĞI VE SONUÇLAR ---
+        if submit_button:
+            if not project_name or not project_name.strip():
+                st.error(t["warning_no_project"])
+            else:
+                calculated_results = {}
+                inputs_summary = {}
 
-                    calculated_results[t["system_names"]["PA/VA"]] = create_output_df(items_data, red_pct, t)
+                target_tz_str = COUNTRY_TIMEZONES.get(selected_country, "Europe/Istanbul")
+                try:
+                    user_tz = pytz.timezone(target_tz_str)
+                except Exception:
+                    user_tz = pytz.timezone("Europe/Istanbul")
 
-            # --- EKRANDA SONUÇLARI GÖSTERME ---
-            st.success(t["report_success"].format(project=display_proj_name))
+                now_str = datetime.now(user_tz).strftime("%d.%m.%Y - %H:%M")
+                display_proj_name = project_name.strip()
 
-            res_tabs = st.tabs(list(calculated_results.keys()))
-            for idx, sys_key in enumerate(calculated_results.keys()):
-                with res_tabs[idx]:
-                    col_in, col_out = st.columns([1, 1.5])
-                    with col_in:
-                        st.markdown(f"#### {t['inputs_header']}")
-                        st.dataframe(inputs_summary[sys_key], use_container_width=True, hide_index=True)
-                    with col_out:
-                        st.markdown(f"#### {t['outputs_header']}")
-                        st.dataframe(calculated_results[sys_key], use_container_width=True, hide_index=True)
+                for sys in selected_systems:
+                    # 1. CCTV HESAPLAMA
+                    if t["system_names"]["CCTV"] in sys:
+                        red_pct = inputs.get('cctv_redundancy', 0)
+                        sqm = inputs.get('cctv_sqm') or 0
+                        fence_m = inputs.get('cctv_fence_m') or 0
+                        checkpoints = inputs.get('cctv_checkpoints') or 0
+                        lanes = inputs.get('cctv_lanes') or 0
+                        days = inputs.get('cctv_storage_days') or 60
+                        resolution = inputs.get('cctv_resolution') or "4MP"
+                        airport_type = inputs.get('cctv_airport_type') or t["cctv_opt1"]
 
-            # --- İNDİRME ALANI (PDF & EXCEL) ---
-            st.markdown("---")
-            st.subheader(t["download_section"])
+                        sqm_per_cam = 60 if airport_type == t["cctv_opt1"] else 90
+                        fence_m_per_cam = 40 if airport_type == t["cctv_opt1"] else 60
 
-            pdf_bytes = generate_pdf(
-                project_name=display_proj_name,
-                country=selected_country,
-                city=selected_city,
-                results=calculated_results,
-                inputs_summary=inputs_summary,
-                report_datetime_str=now_str,
-                t_labels=t
-            )
+                        indoor_cams = math.ceil(sqm / sqm_per_cam) if sqm > 0 else 0
+                        fence_cams = math.ceil(fence_m / fence_m_per_cam) if fence_m > 0 else 0
+                        checkpoint_cams = checkpoints * 4
+                        anpr_cams = lanes * 2 if inputs.get('cctv_use_anpr', False) else 0
 
-            excel_bytes = generate_excel(
-                results=calculated_results,
-                inputs_summary=inputs_summary,
-                t_labels=t
-            )
+                        total_cams = indoor_cams + fence_cams + checkpoint_cams + anpr_cams
+                        
+                        bitrate_map = {"2MP": 3, "4MP": 5, "8MP": 10}
+                        mbps_per_cam = bitrate_map.get(resolution, 5)
+                        storage_tb = math.ceil((total_cams * mbps_per_cam * 3600 * 24 * days) / (8 * 1024 * 1024)) if total_cams > 0 else 0
 
-            file_prefix = display_proj_name.replace(' ', '_')
-            pdf_filename = f"{file_prefix}_Report.pdf"
-            excel_filename = f"{file_prefix}_Report.xlsx"
+                        poe_switches_24p = math.ceil(total_cams / 20) if total_cams > 0 else 0
 
-            col_pdf, col_excel = st.columns(2)
-            with col_pdf:
-                st.download_button(
-                    label=t["download_pdf_btn"],
-                    data=pdf_bytes,
-                    file_name=pdf_filename,
-                    mime="application/pdf",
-                    use_container_width=True,
-                    type="primary"
+                        inputs_summary[t["system_names"]["CCTV"]] = pd.DataFrame([
+                            {t["col_input_param"]: t["cctv_scope"], t["col_input_val"]: airport_type, t["col_unit"]: t["units"]["none"]},
+                            {t["col_input_param"]: t["cctv_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
+                            {t["col_input_param"]: t["cctv_checkpoints"], t["col_input_val"]: checkpoints, t["col_unit"]: t["units"]["point"]},
+                            {t["col_input_param"]: t["cctv_fence"], t["col_input_val"]: fence_m, t["col_unit"]: t["units"]["meter"]},
+                            {t["col_input_param"]: t["cctv_lanes"], t["col_input_val"]: lanes, t["col_unit"]: t["units"]["lane"]},
+                            {t["col_input_param"]: t["cctv_cr"], t["col_input_val"]: inputs.get('cctv_control_rooms') or 0, t["col_unit"]: t["units"]["pcs"]},
+                            {t["col_input_param"]: t["cctv_op"], t["col_input_val"]: inputs.get('cctv_operators') or 0, t["col_unit"]: t["units"]["desk"]},
+                            {t["col_input_param"]: t["cctv_days"], t["col_input_val"]: days, t["col_unit"]: t["units"]["day"]},
+                            {t["col_input_param"]: t["cctv_res"], t["col_input_val"]: resolution, t["col_unit"]: t["units"]["none"]},
+                            {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
+                        ])
+
+                        items_data = [
+                            (t["cctv_out"]["indoor"], indoor_cams, t["units"]["pcs"]),
+                            (t["cctv_out"]["fence"], fence_cams, t["units"]["pcs"]),
+                            (t["cctv_out"]["checkpoint"], checkpoint_cams, t["units"]["pcs"]),
+                            (t["cctv_out"]["anpr"], anpr_cams, t["units"]["pcs"]),
+                            (t["cctv_out"]["total"], total_cams, t["units"]["pcs"]),
+                            (t["cctv_out"]["storage"], storage_tb, t["units"]["tb"]),
+                            (t["cctv_out"]["switch"], poe_switches_24p, t["units"]["pcs"]),
+                            (t["cctv_out"]["license"], total_cams, t["units"]["license"])
+                        ]
+
+                        calculated_results[t["system_names"]["CCTV"]] = create_output_df(items_data, red_pct, t)
+
+                    # 2. ACS HESAPLAMA
+                    elif t["system_names"]["ACS"] in sys:
+                        red_pct = inputs.get('acs_redundancy', 0)
+                        single_doors = inputs.get('acs_single_doors') or 0
+                        double_doors = inputs.get('acs_double_doors') or 0
+                        turnstiles = inputs.get('acs_turnstiles') or 0
+                        users = inputs.get('acs_users') or 0
+                        face_qty = inputs.get('acs_face_rec_qty') or 0
+                        finger_qty = inputs.get('acs_fingerprint_qty') or 0
+
+                        total_doors = single_doors + double_doors
+                        readers = (single_doors * 2) + (double_doors * 2) + (turnstiles * 2)
+                        controllers = math.ceil((total_doors + turnstiles) / 4) if (total_doors + turnstiles) > 0 else 0
+
+                        inputs_summary[t["system_names"]["ACS"]] = pd.DataFrame([
+                            {t["col_input_param"]: t["acs_s_doors"], t["col_input_val"]: single_doors, t["col_unit"]: t["units"]["pcs"]},
+                            {t["col_input_param"]: t["acs_d_doors"], t["col_input_val"]: double_doors, t["col_unit"]: t["units"]["pcs"]},
+                            {t["col_input_param"]: t["acs_turnstiles"], t["col_input_val"]: turnstiles, t["col_unit"]: t["units"]["pcs"]},
+                            {t["col_input_param"]: t["acs_users"], t["col_input_val"]: users, t["col_unit"]: t["units"]["user"]},
+                            {t["col_input_param"]: t["acs_face"], t["col_input_val"]: face_qty, t["col_unit"]: t["units"]["pcs"]},
+                            {t["col_input_param"]: t["acs_finger"], t["col_input_val"]: finger_qty, t["col_unit"]: t["units"]["pcs"]},
+                            {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
+                        ])
+
+                        items_data = [
+                            (t["acs_out"]["doors"], total_doors, t["units"]["pcs"]),
+                            (t["acs_out"]["turnstiles"], turnstiles, t["units"]["pcs"]),
+                            (t["acs_out"]["readers"], readers, t["units"]["pcs"]),
+                            (t["acs_out"]["face"], face_qty, t["units"]["pcs"]),
+                            (t["acs_out"]["finger"], finger_qty, t["units"]["pcs"]),
+                            (t["acs_out"]["controllers"], controllers, t["units"]["pcs"]),
+                            (t["acs_out"]["users"], users, t["units"]["user"])
+                        ]
+
+                        calculated_results[t["system_names"]["ACS"]] = create_output_df(items_data, red_pct, t)
+
+                    # 3. FAS HESAPLAMA
+                    elif t["system_names"]["FAS"] in sys:
+                        red_pct = inputs.get('fas_redundancy', 0)
+                        sqm = inputs.get('fas_sqm') or 0
+                        beam_qty = inputs.get('fas_beam_detectors') or 0
+
+                        base_detectors = math.ceil(sqm / 60) if sqm > 0 else 0
+                        if inputs.get('fas_raised_floor', False) and base_detectors > 0:
+                            base_detectors = math.ceil(base_detectors * 1.5)
+
+                        manual_call_points = math.ceil(sqm / 500) if sqm > 0 else 0
+                        sounders_flashing = math.ceil(sqm / 400) if sqm > 0 else 0
+                        loops = math.ceil(base_detectors / 200) if base_detectors > 0 else 0
+                        panels = math.ceil(loops / 8) if loops > 0 else 0
+
+                        inputs_summary[t["system_names"]["FAS"]] = pd.DataFrame([
+                            {t["col_input_param"]: t["fas_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
+                            {t["col_input_param"]: t["fas_rf"], t["col_input_val"]: t["units"]["yes"] if inputs.get('fas_raised_floor') else t["units"]["no"], t["col_unit"]: t["units"]["none"]},
+                            {t["col_input_param"]: t["fas_beam"], t["col_input_val"]: beam_qty, t["col_unit"]: t["units"]["pair"]},
+                            {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
+                        ])
+
+                        items_data = [
+                            (t["fas_out"]["detectors"], base_detectors, t["units"]["pcs"]),
+                            (t["fas_out"]["beam"], beam_qty, t["units"]["pair"]),
+                            (t["fas_out"]["buttons"], manual_call_points, t["units"]["pcs"]),
+                            (t["fas_out"]["sounders"], sounders_flashing, t["units"]["pcs"]),
+                            (t["fas_out"]["loops"], loops, t["units"]["loop"]),
+                            (t["fas_out"]["panels"], panels, t["units"]["pcs"])
+                        ]
+
+                        calculated_results[t["system_names"]["FAS"]] = create_output_df(items_data, red_pct, t)
+
+                    # 4. PA/VA HESAPLAMA
+                    elif t["system_names"]["PA/VA"] in sys:
+                        red_pct = inputs.get('pava_redundancy', 0)
+                        sqm = inputs.get('pava_sqm') or 0
+                        zones = inputs.get('pava_zones') or 0
+                        env = inputs.get('pava_environment') or t["pava_env_std"]
+
+                        speakers = math.ceil(sqm / 50) if sqm > 0 else 0
+                        watts_per_spk = 6 if env == t["pava_env_noisy"] else 3
+                        total_power_watts = math.ceil(speakers * watts_per_spk * 1.25) if speakers > 0 else 0
+                        amplifiers = math.ceil(total_power_watts / 1000) if total_power_watts > 0 else 0
+
+                        inputs_summary[t["system_names"]["PA/VA"]] = pd.DataFrame([
+                            {t["col_input_param"]: t["pava_sqm"], t["col_input_val"]: sqm, t["col_unit"]: t["units"]["m2"]},
+                            {t["col_input_param"]: t["pava_zones"], t["col_input_val"]: zones, t["col_unit"]: t["units"]["zone"]},
+                            {t["col_input_param"]: t["pava_env"], t["col_input_val"]: env, t["col_unit"]: t["units"]["none"]},
+                            {t["col_input_param"]: t["redundancy_label"], t["col_input_val"]: f"%{red_pct}", t["col_unit"]: "%"}
+                        ])
+
+                        items_data = [
+                            (t["pava_out"]["speakers"], speakers, t["units"]["pcs"]),
+                            (t["pava_out"]["power"], total_power_watts, t["units"]["watt"]),
+                            (t["pava_out"]["amps"], amplifiers, t["units"]["pcs"]),
+                            (t["pava_out"]["zones"], zones, t["units"]["zone"])
+                        ]
+
+                        calculated_results[t["system_names"]["PA/VA"]] = create_output_df(items_data, red_pct, t)
+
+                # --- EKRANDA SONUÇLARI GÖSTERME ---
+                st.success(t["report_success"].format(project=display_proj_name))
+
+                res_tabs = st.tabs(list(calculated_results.keys()))
+                for idx, sys_key in enumerate(calculated_results.keys()):
+                    with res_tabs[idx]:
+                        col_in, col_out = st.columns([1, 1.5])
+                        with col_in:
+                            st.markdown(f"#### {t['inputs_header']}")
+                            st.dataframe(inputs_summary[sys_key], use_container_width=True, hide_index=True)
+                        with col_out:
+                            st.markdown(f"#### {t['outputs_header']}")
+                            st.dataframe(calculated_results[sys_key], use_container_width=True, hide_index=True)
+
+                # --- İNDİRME ALANI (PDF & EXCEL) ---
+                st.markdown("---")
+                st.subheader(t["download_section"])
+
+                pdf_bytes = generate_pdf(
+                    project_name=display_proj_name,
+                    country=selected_country,
+                    city=selected_city,
+                    results=calculated_results,
+                    inputs_summary=inputs_summary,
+                    report_datetime_str=now_str,
+                    t_labels=t
                 )
-            with col_excel:
-                st.download_button(
-                    label=t["download_excel_btn"],
-                    data=excel_bytes,
-                    file_name=excel_filename,
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
+
+                excel_bytes = generate_excel(
+                    results=calculated_results,
+                    inputs_summary=inputs_summary,
+                    t_labels=t
                 )
+
+                file_prefix = display_proj_name.replace(' ', '_')
+                pdf_filename = f"{file_prefix}_Report.pdf"
+                excel_filename = f"{file_prefix}_Report.xlsx"
+
+                col_pdf, col_excel = st.columns(2)
+                with col_pdf:
+                    st.download_button(
+                        label=t["download_pdf_btn"],
+                        data=pdf_bytes,
+                        file_name=pdf_filename,
+                        mime="application/pdf",
+                        use_container_width=True,
+                        type="primary"
+                    )
+                with col_excel:
+                    st.download_button(
+                        label=t["download_excel_btn"],
+                        data=excel_bytes,
+                        file_name=excel_filename,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
