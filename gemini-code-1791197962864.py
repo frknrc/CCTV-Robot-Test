@@ -5,7 +5,7 @@ import io
 import os
 from datetime import datetime
 import pytz
-import google.generativeai as genai
+from google import genai
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -697,7 +697,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (GENİŞLETİLMİŞ MODEL DESTEĞİ) ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (YENİ OFFICIAL GOOGLE GENAI SDK) ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Asistanı")
     st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
@@ -705,12 +705,6 @@ def render_ulv_ai_bot(t_labels):
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         st.info("💡 AI Asistanı aktif etmek için `GEMINI_API_KEY` eklenmelidir.")
-        return
-
-    try:
-        genai.configure(api_key=api_key)
-    except Exception as e:
-        st.error(f"Gemini API Hatası: {str(e)}")
         return
 
     system_instruction = """
@@ -747,28 +741,23 @@ def render_ulv_ai_bot(t_labels):
 
             with st.chat_message("assistant"):
                 with st.spinner("ULV Asistanı yanıtlıyor..."):
-                    ai_reply = None
-                    # Farklı API sürümleri/modelleri için yedekli deneme listesi
-                    candidate_models = ["gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-pro"]
-                    
-                    for model_name in candidate_models:
-                        try:
-                            model = genai.GenerativeModel(
-                                model_name=model_name,
-                                system_instruction=system_instruction
-                            )
-                            response = model.generate_content(user_prompt)
-                            if response and response.text:
-                                ai_reply = response.text
-                                break
-                        except Exception:
-                            continue
-
-                    if ai_reply:
-                        st.markdown(ai_reply)
-                        st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
-                    else:
-                        st.error("Üzgünüz, yapay zeka servisine şu anda erişilemiyor. Lütfen API key'inizin aktif olduğunu kontrol edin.")
+                    try:
+                        client = genai.Client(api_key=api_key)
+                        response = client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=user_prompt,
+                            config={
+                                'system_instruction': system_instruction
+                            }
+                        )
+                        if response and response.text:
+                            ai_reply = response.text
+                            st.markdown(ai_reply)
+                            st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
+                        else:
+                            st.error("Yanıt alınamadı.")
+                    except Exception as e:
+                        st.error(f"Hata oluştu: {str(e)}")
 
 # --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
 default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
