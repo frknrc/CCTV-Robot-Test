@@ -5,6 +5,7 @@ import io
 import os
 from datetime import datetime
 import pytz
+import requests
 from reportlab.pdfgen import canvas
 
 # --- SAYFA YAPILANDIRMASI ---
@@ -533,24 +534,21 @@ class NumberedCanvas(canvas.Canvas):
         self.setFont("Helvetica", 8)
         self.setFillColor(colors.HexColor("#718096"))
         
-        # Sadece 2. sayfadan itibaren header/footer ekle (İlk sayfa kapak)
         if self._pageNumber > 1:
-            # Header
             self.setStrokeColor(colors.HexColor("#E2E8F0"))
             self.setLineWidth(0.5)
             self.line(25, A4[1] - 20, A4[0] - 25, A4[1] - 20)
             self.drawString(25, A4[1] - 16, "TAV Technologies - Zayıf Akım Sistem Planlama Raporu")
             
-            # Footer
             self.line(25, 30, A4[0] - 25, 30)
             self.drawString(25, 18, "Gizli & Özel - TAV Technologies © Tüm Hakları Saklıdır.")
             self.drawRightString(A4[0] - 25, 18, f"Sayfa {self._pageNumber} / {page_count}")
         self.restoreState()
 
-# --- YENİLENMİŞ KURUMSAL PDF OLUŞTURMA ---
+# --- YENİLENMİŞ LOGOLU KURUMSAL PDF OLUŞTURMA ---
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
     from reportlab.lib.pagesizes import A4
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable, Image
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib import colors
     from reportlab.pdfbase import pdfmetrics
@@ -594,17 +592,17 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
     cover_title_style = ParagraphStyle(
         'CoverTitle',
         fontName=font_bold_name,
-        fontSize=24,
-        leading=28,
+        fontSize=22,
+        leading=26,
         textColor=colors.HexColor("#1A365D"),
-        spaceAfter=15
+        spaceAfter=12
     )
     
     cover_sub_style = ParagraphStyle(
         'CoverSub',
         fontName=font_bold_name,
-        fontSize=14,
-        leading=18,
+        fontSize=13,
+        leading=17,
         textColor=colors.HexColor("#2B6CB0"),
         spaceAfter=25
     )
@@ -637,7 +635,7 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
         textColor=colors.HexColor("#2D3748")
     )
 
-    logo_style = ParagraphStyle(
+    logo_text_style = ParagraphStyle(
         'LogoText',
         fontName='Helvetica-Bold',
         fontSize=26,
@@ -648,15 +646,27 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
     page_width = A4[0] - 50
 
     # --- 1. KAPAK SAYFASI (COVER PAGE) ---
-    story.append(Spacer(1, 40))
-    story.append(Paragraph("<b>TAV Technologies</b>", logo_style))
-    story.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor("#1A365D"), spaceAfter=40))
+    story.append(Spacer(1, 20))
+    
+    logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
+    try:
+        resp = requests.get(logo_url, timeout=5)
+        if resp.status_code == 200:
+            logo_img_bytes = io.BytesIO(resp.content)
+            story.append(Image(logo_img_bytes, width=220, height=55))
+        else:
+            story.append(Paragraph("<b>TAV Technologies</b>", logo_text_style))
+    except Exception:
+        story.append(Paragraph("<b>TAV Technologies</b>", logo_text_style))
+
+    story.append(Spacer(1, 15))
+    story.append(HRFlowable(width="100%", thickness=2.5, color=colors.HexColor("#1A365D"), spaceAfter=30))
     
     story.append(Spacer(1, 40))
     story.append(Paragraph(safe_str(t_labels["pdf_title"]).upper(), cover_title_style))
     story.append(Paragraph(safe_str(f"PROJE: {project_name}"), cover_sub_style))
     
-    story.append(Spacer(1, 100))
+    story.append(Spacer(1, 80))
     
     meta_table_data = [
         [Paragraph(safe_str(f"<b>{t_labels['location_label']}:</b>"), normal_style), Paragraph(safe_str(f"{country} / {city}"), normal_style)],
