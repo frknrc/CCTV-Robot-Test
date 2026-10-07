@@ -13,7 +13,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- ÜST MENÜ, GİTHUB SİMGELERİ VE DİNAMİK "PRESS ENTER TO APPLY" ÇEVİRİSİ (CSS) ---
+# --- ÜST MENÜ VE DİNAMİK "PRESS ENTER TO APPLY" ÇEVİRİSİ (CSS) ---
 def apply_custom_language_styles(lang_code):
     instructions = {
         "TR": "Uygulamak için Enter'a basınız",
@@ -24,10 +24,17 @@ def apply_custom_language_styles(lang_code):
     
     custom_css = f"""
     <style>
+    /* Streamlit Sağ Üst Menü ve Altbilgiyi Gizleme */
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
-    header {{visibility: hidden;}}
     
+    /* Sayfa Üst Boşluk Rahatlatması */
+    .block-container {{
+        padding-top: 2rem !important;
+        padding-bottom: 3rem !important;
+    }}
+    
+    /* Input alanlarındaki 'Press Enter to apply' metnini seçili dile dönüştürme */
     div[data-testid="InputInstructions"] {{
         font-size: 0px !important;
     }}
@@ -692,7 +699,26 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- BAŞLIK VE DİL SEÇİMİ ---
+# --- 1. EN ÜST BAĞIMSIZ LOGO ALANI ---
+default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
+
+# Logoyu en üst satıra net şekilde basıyoruz
+if os.path.exists("logo.png"):
+    st.image("logo.png", width=320)
+elif os.path.exists("logo.jpg"):
+    st.image("logo.jpg", width=320)
+else:
+    # URL'den çekilen SVG logosunun dark mode'da net görünmesi için parlaklık filtresi ile basıyoruz
+    st.markdown(
+        f"""
+        <div style="margin-bottom: 25px;">
+            <img src="{default_logo_url}" width="320" style="filter: brightness(0) invert(1) drop-shadow(0px 0px 1px rgba(255,255,255,0.5));">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# --- 2. DİL, ÜLKE VE ŞEHİR SEÇİM ALANI ---
 c_lang, c_country, c_city = st.columns(3)
 with c_lang:
     selected_lang = st.selectbox(
