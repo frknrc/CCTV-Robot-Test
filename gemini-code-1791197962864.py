@@ -697,7 +697,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (YENİ OFFICIAL GOOGLE GENAI SDK) ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Asistanı")
     st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
@@ -725,7 +725,7 @@ def render_ulv_ai_bot(t_labels):
     if "ai_chat_history" not in st.session_state:
         st.session_state.ai_chat_history = []
 
-    # Chat Kutusu İçeriği (Yükseklik Sınırlamalı)
+    # Chat Kutusu İçeriği
     chat_container = st.container(height=450)
     with chat_container:
         for msg in st.session_state.ai_chat_history:
@@ -744,7 +744,7 @@ def render_ulv_ai_bot(t_labels):
                     try:
                         client = genai.Client(api_key=api_key)
                         response = client.models.generate_content(
-                            model='gemini-2.5-flash',
+                            model='gemini-1.5-flash',  # Model ismi güncellendi
                             contents=user_prompt,
                             config={
                                 'system_instruction': system_instruction
@@ -758,7 +758,7 @@ def render_ulv_ai_bot(t_labels):
                             st.error("Yanıt alınamadı.")
                     except Exception as e:
                         st.error(f"Hata oluştu: {str(e)}")
-
+                        
 # --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
 default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
 
