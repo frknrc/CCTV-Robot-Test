@@ -697,7 +697,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (GÜNCEL MODEL FIX) ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN (HIZLI VE ZAMAN AŞIMLI FIX) ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Asistanı")
     st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
@@ -721,8 +721,7 @@ def render_ulv_ai_bot(t_labels):
     Yaklaşımın ve Kuralların:
     1. Çok profesyonel, teknik olarak kesin ve yardımcı bir dilde yanıt ver.
     2. Havalimanı ve büyük ölçekli bina standartlarına (ICAO, IATA, EN54, NFPA) uygun mühendislik yanıtları ver.
-    3. Kullanıcıların botun hesaplama katsayıları ve mantığı hakkındaki sorularını ULV Systems standartlarına göre netleştir.
-    4. Doğrudan net, teknik ve maddeli açıklamalar sun.
+    3. Doğrudan net, teknik ve maddeli açıklamalar sun.
     """
 
     if "ai_chat_history" not in st.session_state:
@@ -745,37 +744,29 @@ def render_ulv_ai_bot(t_labels):
             with st.chat_message("assistant"):
                 with st.spinner("ULV Asistanı yanıtlıyor..."):
                     try:
-                        client = genai.Client(api_key=api_key)
-                        ai_reply = None
-                        last_err = None
+                        # Zaman aşımı ekleyerek isteğin takılmasını önlüyoruz
+                        client = genai.Client(
+                            api_key=api_key,
+                            http_options=types.HttpOptions(timeout=15000) # 15 saniye zaman aşımı
+                        )
                         
-                        # Google API'sinin doğrudan yönlendirdiği güncel modeller
-                        candidate_models = ["gemini-3.8-flash", "gemini-3-flash-preview"]
+                        response = client.models.generate_content(
+                            model="gemini-2.5-flash",
+                            contents=user_prompt,
+                            config=types.GenerateContentConfig(
+                                system_instruction=system_instruction,
+                                temperature=0.3
+                            )
+                        )
                         
-                        for m_name in candidate_models:
-                            try:
-                                response = client.models.generate_content(
-                                    model=m_name,
-                                    contents=user_prompt,
-                                    config=types.GenerateContentConfig(
-                                        system_instruction=system_instruction
-                                    )
-                                )
-                                if response and response.text:
-                                    ai_reply = response.text
-                                    break
-                            except Exception as err:
-                                last_err = err
-                                continue
-
-                        if ai_reply:
+                        if response and response.text:
+                            ai_reply = response.text
                             st.markdown(ai_reply)
                             st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
                         else:
-                            st.error(f"Hata oluştu: {str(last_err)}")
+                            st.error("Yanıt boş döndü. Lütfen tekrar deneyin.")
                     except Exception as e:
-                        st.error(f"Bağlantı Hatası: {str(e)}")
-
+                        st.error(f"İstek zaman aşımına uğradı veya hata oluştu: {str(e)}")
 # --- BAŞLIK VE DİL SEÇİMİ ---
 c_lang, c_country, c_city = st.columns(3)
 with c_lang:
