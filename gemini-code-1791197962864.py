@@ -697,7 +697,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (STABLE & FALLBACK) ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Asistanı")
     st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
@@ -705,6 +705,13 @@ def render_ulv_ai_bot(t_labels):
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         st.info("💡 AI Asistanı aktif etmek için `GEMINI_API_KEY` eklenmelidir.")
+        return
+
+    import google.generativeai as genai_legacy
+    try:
+        genai_legacy.configure(api_key=api_key)
+    except Exception as e:
+        st.error(f"API Yapılandırma Hatası: {str(e)}")
         return
 
     system_instruction = """
@@ -741,32 +748,31 @@ def render_ulv_ai_bot(t_labels):
 
             with st.chat_message("assistant"):
                 with st.spinner("ULV Asistanı yanıtlıyor..."):
-                    client = genai.Client(api_key=api_key)
                     ai_reply = None
+                    last_error = None
                     
-                    # Güncel modeller sırasıyla denenir
-                    candidate_models = ['gemini-2.5-flash', 'gemini-2.0-flash']
+                    # Garantili ve en yaygın model isimleri sırasıyla denenir
+                    candidate_models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
                     
-                    for model_name in candidate_models:
+                    for m_name in candidate_models:
                         try:
-                            response = client.models.generate_content(
-                                model=model_name,
-                                contents=user_prompt,
-                                config={
-                                    'system_instruction': system_instruction
-                                }
+                            model = genai_legacy.GenerativeModel(
+                                model_name=m_name,
+                                system_instruction=system_instruction
                             )
+                            response = model.generate_content(user_prompt)
                             if response and response.text:
                                 ai_reply = response.text
                                 break
-                        except Exception:
+                        except Exception as err:
+                            last_error = err
                             continue
 
                     if ai_reply:
                         st.markdown(ai_reply)
                         st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
                     else:
-                        st.error("Yanıt alınamadı. Lütfen API anahtarınızı ve erişim izinlerinizi kontrol edin.")
+                        st.error(f"Yanıt alınamadı. Detaylı Hata: {str(last_error)}")
                         
 # --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
 default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
