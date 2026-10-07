@@ -95,7 +95,7 @@ LOCATION_DATA = {
         "Diğer": ["Diğer"]
     },
     "EN": {
-        "Turkey": ["Istanbul", "Ankara", "Izmir", "Antalya", "Bursa", "Adana", "Gaziantep", "Trabzon", "Mugla", "Other"],
+        "Turkey": ["Istanbul", "Ankara", "Izmir", "Antalya", "Bursa", "Adana", "Gazaientep", "Trabzon", "Mugla", "Other"],
         "Kazakhstan": ["Astana", "Almaty", "Shymkent", "Aktau", "Atyrau", "Karaganda", "Aktobe", "Other"],
         "Azerbaijan": ["Baku", "Ganja", "Sumqayit", "Khankendi", "Other"],
         "Georgia": ["Tbilisi", "Batumi", "Kutaisi", "Other"],
@@ -513,7 +513,7 @@ TEXTS = {
     }
 }
 
-# --- PDF OLUŞTURMA (LAZY LOADING) ---
+# --- PDF OLUŞTURMA ---
 def generate_pdf(project_name, country, city, results, inputs_summary, report_datetime_str, t_labels):
     from reportlab.lib.pagesizes import A4
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -663,7 +663,7 @@ def generate_pdf(project_name, country, city, results, inputs_summary, report_da
     buffer.seek(0)
     return buffer.getvalue()
 
-# --- EXCEL OLUŞTURMA (LAZY LOADING) ---
+# --- EXCEL OLUŞTURMA ---
 def generate_excel(results, inputs_summary, t_labels):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -697,7 +697,7 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
-# --- ULV SYSTEMS AI TEKNİK ASİSTAN (HIZLI VE ZAMAN AŞIMLI FIX) ---
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU (GEMINI 3.8-FLASH MODELİ) ---
 def render_ulv_ai_bot(t_labels):
     st.markdown("### 🤖 ULV Systems AI Asistanı")
     st.caption("Zayıf akım sistemleri, standartlar ve katsayılar hakkında soru sorabilirsiniz.")
@@ -706,9 +706,6 @@ def render_ulv_ai_bot(t_labels):
     if not api_key:
         st.info("💡 AI Asistanı aktif etmek için `GEMINI_API_KEY` eklenmelidir.")
         return
-
-    from google import genai
-    from google.genai import types
 
     system_instruction = """
     Sen ULV Systems (TAV Technologies) bünyesinde çalışan kıdemli bir Zayıf Akım Sistemleri Uzmanısın (ELV Specialist).
@@ -721,7 +718,8 @@ def render_ulv_ai_bot(t_labels):
     Yaklaşımın ve Kuralların:
     1. Çok profesyonel, teknik olarak kesin ve yardımcı bir dilde yanıt ver.
     2. Havalimanı ve büyük ölçekli bina standartlarına (ICAO, IATA, EN54, NFPA) uygun mühendislik yanıtları ver.
-    3. Doğrudan net, teknik ve maddeli açıklamalar sun.
+    3. Kullanıcıların botun hesaplama katsayıları ve mantığı hakkındaki sorularını ULV Systems standartlarına göre netleştir.
+    4. Doğrudan net, teknik ve maddeli açıklamalar sun.
     """
 
     if "ai_chat_history" not in st.session_state:
@@ -744,19 +742,15 @@ def render_ulv_ai_bot(t_labels):
             with st.chat_message("assistant"):
                 with st.spinner("ULV Asistanı yanıtlıyor..."):
                     try:
-                        # Zaman aşımı ekleyerek isteğin takılmasını önlüyoruz
-                        client = genai.Client(
-                            api_key=api_key,
-                            http_options=types.HttpOptions(timeout=15000) # 15 saniye zaman aşımı
-                        )
+                        client = genai.Client(api_key=api_key)
                         
+                        # Google API'sinin istediği güncel model
                         response = client.models.generate_content(
-                            model="gemini-2.5-flash",
+                            model="gemini-3.8-flash",
                             contents=user_prompt,
-                            config=types.GenerateContentConfig(
-                                system_instruction=system_instruction,
-                                temperature=0.3
-                            )
+                            config={
+                                "system_instruction": system_instruction
+                            }
                         )
                         
                         if response and response.text:
@@ -764,9 +758,32 @@ def render_ulv_ai_bot(t_labels):
                             st.markdown(ai_reply)
                             st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
                         else:
-                            st.error("Yanıt boş döndü. Lütfen tekrar deneyin.")
+                            st.error("Model boş yanıt döndürdü.")
                     except Exception as e:
-                        st.error(f"İstek zaman aşımına uğradı veya hata oluştu: {str(e)}")
+                        st.error(f"Hata oluştu: {str(e)}")
+
+# --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ (GARANTİLİ YÜKLEME) ---
+logo_path = None
+for p in ["logo.png", "logo.jpg", "logo.jpeg"]:
+    if os.path.exists(p):
+        logo_path = p
+        break
+
+if logo_path:
+    st.image(logo_path, width=320)
+else:
+    # Güvenli SVG / HTML Logo Gösterimi
+    st.markdown(
+        """
+        <div style="margin-bottom: 25px; font-family: sans-serif;">
+            <h1 style="color: #1A365D; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -1px;">
+                TAV <span style="color: #2B6CB0; font-weight: 400;">TECHNOLOGIES</span>
+            </h1>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 # --- BAŞLIK VE DİL SEÇİMİ ---
 c_lang, c_country, c_city = st.columns(3)
 with c_lang:
@@ -794,7 +811,7 @@ st.caption(t["caption"])
 
 st.markdown("---")
 
-# --- SAYFAYI İKİ ANA KOLONA BÖLME (SOL: HESAPLAMA, SAĞ: AI ASİSTAN) ---
+# --- SAYFAYI İKİ ANA KOLONA BÖLME ---
 col_left, col_right = st.columns([2.2, 1.2], gap="large")
 
 with col_right:
