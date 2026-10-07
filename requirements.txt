@@ -7,3 +7,4 @@ pytz
 XlsxWriter
 openpyxl
 google-genai
+google-generativeai
