@@ -5,6 +5,8 @@ import io
 import os
 from datetime import datetime
 import pytz
+from google import genai
+from google.genai import types
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
@@ -13,7 +15,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- ÜST MENÜ, GİTHUB SİMGELERİ VE DİNAMİK "PRESS ENTER TO APPLY" ÇEVİRİSİ (CSS) ---
+# --- ÜST MENÜ VE DİNAMİK "PRESS ENTER TO APPLY" ÇEVİRİSİ (CSS) ---
 def apply_custom_language_styles(lang_code):
     instructions = {
         "TR": "Uygulamak için Enter'a basınız",
@@ -155,6 +157,7 @@ TEXTS = {
         "col_unit": "Birim",
         "ph_example": "Örn",
         "ph_select": "Seçiniz...",
+        "ai_tab_name": "🤖 ULV AI Teknik Asistanı",
         "units": {
             "pcs": "Adet",
             "m2": "m²",
@@ -283,6 +286,7 @@ TEXTS = {
         "col_unit": "Unit",
         "ph_example": "e.g.",
         "ph_select": "Select...",
+        "ai_tab_name": "🤖 ULV AI Technical Assistant",
         "units": {
             "pcs": "Pcs",
             "m2": "m²",
@@ -411,6 +415,7 @@ TEXTS = {
         "col_unit": "Өлшем бірлігі",
         "ph_example": "Мис",
         "ph_select": "Таңдаңыз...",
+        "ai_tab_name": "🤖 ULV AI Техникалық ассистенті",
         "units": {
             "pcs": "Дана",
             "m2": "м²",
@@ -693,6 +698,66 @@ def create_output_df(items_data, redundancy_pct, t_labels):
         })
     return pd.DataFrame(rows)
 
+# --- ULV SYSTEMS AI TEKNİK ASİSTAN BAZI KODU ---
+def render_ulv_ai_bot(t_labels):
+    st.markdown("### 🤖 ULV Systems AI Teknik Asistanı")
+    st.caption("Zayıf akım sistemleri, TAV Technologies standartları, mühendislik katsayıları ve tasarım kriterleri hakkında teknik sorularınızı sorun.")
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        st.info("💡 AI Asistanı kullanabilmek için sunucu/ortam değişkeni olarak `GEMINI_API_KEY` tanımlanmış olmalıdır.")
+        return
+
+    try:
+        client = genai.Client(api_key=api_key)
+    except Exception as e:
+        st.error(f"Gemini API Bağlantısı Başarısız: {str(e)}")
+        return
+
+    system_instruction = """
+    Sen ULV Systems (TAV Technologies) bünyesinde çalışan kıdemli bir Zayıf Akım Sistemleri Uzmanısın (ELV Specialist).
+    Uzmanlık alanların:
+    - CCTV (Kapalı Devre Kamera Güvenlik Sistemleri)
+    - ACS (Kartlı Geçiş ve Turnike Sistemleri)
+    - FAS (Yangın Algılama ve İhbar)
+    - PA/VA (Acil Anons ve Seslendirme)
+    
+    Yaklaşımın ve Kuralların:
+    1. Çok profesyonel, teknik olarak kesin ve yardımcı bir dilde yanıt ver.
+    2. Havalimanı ve büyük ölçekli bina standartlarına (ICAO, IATA, EN54, NFPA) uygun mühendislik yanıtları ver.
+    3. Kullanıcıların botun hesaplama katsayıları ve mantığı hakkındaki sorularını ULV Systems standartlarına göre netleştir.
+    4. Gereksiz laf kalabalığı yapma, doğrudan net, teknik ve maddeli açıklamalar sun.
+    """
+
+    if "ai_chat_history" not in st.session_state:
+        st.session_state.ai_chat_history = []
+
+    for msg in st.session_state.ai_chat_history:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    if user_prompt := st.chat_input("Teknik sorunuzu yazın (Örn: CCTV depolama TB hesabı nasıl yapılıyor?)..."):
+        st.session_state.ai_chat_history.append({"role": "user", "content": user_prompt})
+        with st.chat_message("user"):
+            st.markdown(user_prompt)
+
+        with st.chat_message("assistant"):
+            with st.spinner("ULV Systems Teknik Uzmanı yanıtlıyor..."):
+                try:
+                    response = client.models.generate_content(
+                        model='gemini-2.5-flash',
+                        contents=user_prompt,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_instruction,
+                            temperature=0.3
+                        )
+                    )
+                    ai_reply = response.text
+                    st.markdown(ai_reply)
+                    st.session_state.ai_chat_history.append({"role": "assistant", "content": ai_reply})
+                except Exception as e:
+                    st.error(f"Yanıt üretilirken bir hata oluştu: {str(e)}")
+
 # --- ŞİRKET LOGOSU KONTROLÜ VE EKLENMESİ ---
 default_logo_url = "https://cdn.tav.aero/corporate/TavTechWebsite/tav_renkli_e470511c30.svg"
 
@@ -715,7 +780,6 @@ with c_lang:
         index=0
     )
 
-# SEÇİLEN DİLE GÖRE CSS DİNAMİK YÖNLENDİRME METNİNİ ENJEKTE ET
 apply_custom_language_styles(selected_lang)
 
 t = TEXTS[selected_lang]
@@ -761,7 +825,9 @@ st.markdown("---")
 if not selected_systems:
     st.warning(t["warning_no_system"])
 else:
-    system_tabs = st.tabs(selected_systems)
+    # Sekmelere AI Asistanını da ekliyoruz
+    all_tab_titles = list(selected_systems) + [t["ai_tab_name"]]
+    system_tabs = st.tabs(all_tab_titles)
     inputs = {}
 
     for i, sys in enumerate(selected_systems):
@@ -850,6 +916,10 @@ else:
                 inputs['pava_redundancy'] = st.number_input(
                     t["redundancy_label"], min_value=0, max_value=100, value=0, step=5, key="p_red"
                 )
+
+    # Son Sekmeye ULV Systems AI Asistanını Çiziyoruz
+    with system_tabs[-1]:
+        render_ulv_ai_bot(t)
 
     st.markdown("---")
     submit_button = st.button(t["submit_btn"], use_container_width=True, type="primary")
